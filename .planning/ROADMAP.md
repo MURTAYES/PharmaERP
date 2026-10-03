@@ -67,14 +67,14 @@ Plans:
   4. Pharmacist can hold current bill to server and resume any held bill later from any terminal.
   5. Checkout atomically creates an immutable invoice snapshot, increments gap-free counter, and deducts stock using `$gte` guards.
   6. Thermal receipts (58mm/80mm) print cleanly via browser print stylesheet.
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: Invoicing data model, atomic counter engine, and server-side pricing/discount/charge calculation service
-- [ ] 03-02: Atomic checkout transaction service with `$gte` stock deduction guard and movement ledger recording
-- [ ] 03-03: Server-side hold/resume bills API and state management
-- [ ] 03-04: High-speed POS billing UI with keyboard shortcuts, FEFO picker, unit converters, and price override inputs
-- [ ] 03-05: Payment modal (cash with change calculation, card, MFS, split) and thermal receipt print template (@page CSS)
+- [ ] 03-01: Invoicing Data Models, Pricing Engine with Decimal.js, and Sequential Counter Service
+- [ ] 03-02: Atomic POS Checkout Transaction Service, FEFO Batch API, and Stock Guard
+- [ ] 03-03: Server-Side Held Bills API and Multi-Terminal Cart Synchronization
+- [ ] 03-04: High-Speed Counter POS Billing UI with Cart Management, FEFO Selector, Price Overrides & Keyboard Controls
+- [ ] 03-05: Payment Processing Modal, Thermal Receipt Print Engine, and Invoice History
 
 ### Phase 4: Returns & Credit Notes (End-to-End)
 **Goal**: Deliver a complete sales return and supplier return workflow allowing item returns against invoices, destination stock bucket routing, proportional refund calculation, sequential credit notes, and supplier return invoices.
