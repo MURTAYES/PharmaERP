@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
-import { roleGuard } from '../middleware/roleGuard';
+import { authenticate } from '../middleware/auth.js';
+import { roleGuard } from '../middleware/roleGuard.js';
 import {
   transferStock,
   writeOffStock,
   getStockMovements,
-} from '../controllers/stockAdjustmentController';
+} from '../controllers/stockAdjustmentController.js';
 
 const router = Router();
 

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { Batch } from '../models/Batch';
-import { Item } from '../models/Item';
-import { Settings } from '../models/Settings';
+import { Batch } from '../models/Batch.js';
+import { Item } from '../models/Item.js';
+import { Settings } from '../models/Settings.js';
 
 /**
  * Get real-time alert summary KPI counts
@@ -99,7 +99,7 @@ export async function getExpiringBatches(req: Request, res: Response): Promise<v
     res.json({
       tier,
       count: batches.length,
-      batches: batches.map((b) => b.toJSON()),
+      batches: batches.map((b: any) => b.toJSON()),
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch expiring batches' });

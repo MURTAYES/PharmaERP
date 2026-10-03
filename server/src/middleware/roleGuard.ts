@@ -2,7 +2,8 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from './auth.js';
 import { UserRole } from '../models/User.js';
 
-export function roleGuard(allowedRoles: UserRole[]) {
+export function roleGuard(roles: UserRole | UserRole[]) {
+  const allowedRoles = Array.isArray(roles) ? roles : [roles];
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const user = req.user;
     if (!user) {

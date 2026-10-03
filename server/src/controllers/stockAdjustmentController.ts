@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { z } from 'zod';
-import { Batch } from '../models/Batch';
-import { Item } from '../models/Item';
-import { StockMovement } from '../models/StockMovement';
-import { createAuditLog } from '../services/auditService';
+import { Batch } from '../models/Batch.js';
+import { Item } from '../models/Item.js';
+import { StockMovement } from '../models/StockMovement.js';
+import { createAuditLog } from '../services/auditService.js';
+import { AuthenticatedRequest } from '../middleware/auth.js';
 
 export const transferStockSchema = z.object({
   batchId: z.string().min(1, 'Batch ID is required'),
@@ -40,7 +41,7 @@ export const writeOffStockSchema = z.object({
 /**
  * Transfer stock between buckets (Owner only)
  */
-export async function transferStock(req: Request, res: Response): Promise<void> {
+export async function transferStock(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const validated = transferStockSchema.parse(req.body);
 
@@ -97,7 +98,7 @@ export async function transferStock(req: Request, res: Response): Promise<void> 
       bucketTo: validated.toBucket,
       reasonCategory: validated.reasonCategory,
       reasonDetail: validated.reasonDetail,
-      userId: req.user?._id || new mongoose.Types.ObjectId(),
+      userId: req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : new mongoose.Types.ObjectId(),
     });
     await movement.save();
 
@@ -133,7 +134,7 @@ export async function transferStock(req: Request, res: Response): Promise<void> 
 /**
  * Write off damaged or expired stock (Owner only)
  */
-export async function writeOffStock(req: Request, res: Response): Promise<void> {
+export async function writeOffStock(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const validated = writeOffStockSchema.parse(req.body);
 
@@ -172,7 +173,7 @@ export async function writeOffStock(req: Request, res: Response): Promise<void> 
       bucketTo: 'write_off',
       reasonCategory: validated.reasonCategory,
       reasonDetail: validated.reasonDetail,
-      userId: req.user?._id || new mongoose.Types.ObjectId(),
+      userId: req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : new mongoose.Types.ObjectId(),
     });
     await movement.save();
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
-import { getAlertSummary, getExpiringBatches, getLowStockItems } from '../controllers/alertController';
+import { authenticate } from '../middleware/auth.js';
+import { getAlertSummary, getExpiringBatches, getLowStockItems } from '../controllers/alertController.js';
 
 const router = Router();
 

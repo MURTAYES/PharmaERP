@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
-import { roleGuard } from '../middleware/roleGuard';
-import { receiveBatch, getBatchesByItem, updateBatchCost } from '../controllers/batchController';
+import { authenticate } from '../middleware/auth.js';
+import { roleGuard } from '../middleware/roleGuard.js';
+import { receiveBatch, getBatchesByItem, updateBatchCost } from '../controllers/batchController.js';
 
 const router = Router();
 

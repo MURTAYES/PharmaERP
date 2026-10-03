@@ -2,11 +2,12 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Decimal from 'decimal.js';
 import { z } from 'zod';
-import { Batch, IBatch } from '../models/Batch';
-import { Item } from '../models/Item';
-import { StockMovement } from '../models/StockMovement';
-import { parseExpiryDate } from '../utils/dateUtils';
-import { createAuditLog } from '../services/auditService';
+import { Batch, IBatch } from '../models/Batch.js';
+import { Item } from '../models/Item.js';
+import { StockMovement } from '../models/StockMovement.js';
+import { parseExpiryDate } from '../utils/dateUtils.js';
+import { createAuditLog } from '../services/auditService.js';
+import { AuthenticatedRequest } from '../middleware/auth.js';
 
 export const receiveBatchSchema = z.object({
   itemId: z.string().min(1, 'Item ID is required'),
@@ -36,7 +37,7 @@ export const updateCostSchema = z.object({
 /**
  * Receive incoming batch stock with unit conversion, duplicate merging, and cost-missing workflow
  */
-export async function receiveBatch(req: Request, res: Response): Promise<void> {
+export async function receiveBatch(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const validated = receiveBatchSchema.parse(req.body);
 
@@ -140,7 +141,7 @@ export async function receiveBatch(req: Request, res: Response): Promise<void> {
       reasonDetail: `Received ${validated.quantity} ${validated.unit}(s) [${totalPieces} pieces]${
         isMerged ? ' (Merged into existing batch)' : ''
       }`,
-      userId: req.user?._id || new mongoose.Types.ObjectId(),
+      userId: req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : new mongoose.Types.ObjectId(),
     });
     await movement.save();
 
@@ -190,7 +191,7 @@ export async function getBatchesByItem(req: Request, res: Response): Promise<voi
     }
 
     const batches = await Batch.find({ itemId }).sort({ expiryDate: 1 });
-    res.json({ batches: batches.map((b) => b.toJSON()) });
+    res.json({ batches: batches.map((b: any) => b.toJSON()) });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch batches' });
   }
@@ -199,7 +200,7 @@ export async function getBatchesByItem(req: Request, res: Response): Promise<voi
 /**
  * Update purchase cost for a batch (Owner only)
  */
-export async function updateBatchCost(req: Request, res: Response): Promise<void> {
+export async function updateBatchCost(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {

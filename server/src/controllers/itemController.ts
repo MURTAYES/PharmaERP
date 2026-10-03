@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Decimal from 'decimal.js';
 import { z } from 'zod';
-import { Item, IItem } from '../models/Item';
-import { Batch } from '../models/Batch';
-import { getNextSequence } from '../models/Counter';
-import { createAuditLog } from '../services/auditService';
+import { Item, IItem } from '../models/Item.js';
+import { Batch } from '../models/Batch.js';
+import { getNextSequence } from '../models/Counter.js';
+import { createAuditLog } from '../services/auditService.js';
+import { AuthenticatedRequest } from '../middleware/auth.js';
 
 export const createItemSchema = z.object({
   tradeName: z.string().min(1, 'Trade name is required').trim(),
@@ -76,7 +77,7 @@ export async function getItems(req: Request, res: Response): Promise<void> {
       .limit(limit);
 
     // Fetch batch aggregations for total sellable stock per item
-    const itemIds = items.map((i) => i._id);
+    const itemIds = items.map((i: any) => i._id);
     const batchAggregates = await Batch.aggregate([
       { $match: { itemId: { $in: itemIds } } },
       {
@@ -92,11 +93,11 @@ export async function getItems(req: Request, res: Response): Promise<void> {
     ]);
 
     const aggregateMap = new Map<string, any>();
-    batchAggregates.forEach((agg) => {
+    batchAggregates.forEach((agg: any) => {
       aggregateMap.set(agg._id.toString(), agg);
     });
 
-    const enrichedItems = items.map((item) => {
+    const enrichedItems = items.map((item: any) => {
       const json = item.toJSON();
       const agg = aggregateMap.get(item._id.toString()) || {
         totalSellablePieces: 0,
@@ -159,7 +160,7 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
       .limit(limit)
       .lean();
 
-    const itemIds = items.map((i) => i._id);
+    const itemIds = items.map((i: any) => i._id);
 
     // Fetch active batches with sellable stock sorted by FEFO
     const batches = await Batch.find({
@@ -170,7 +171,7 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
       .lean();
 
     const batchMap = new Map<string, any[]>();
-    batches.forEach((b) => {
+    batches.forEach((b: any) => {
       const key = b.itemId.toString();
       if (!batchMap.has(key)) batchMap.set(key, []);
       batchMap.get(key)!.push(b);
@@ -235,7 +236,7 @@ export async function getItemById(req: Request, res: Response): Promise<void> {
 
     res.json({
       item: item.toJSON(),
-      batches: batches.map((b) => b.toJSON()),
+      batches: batches.map((b: any) => b.toJSON()),
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch item' });
@@ -245,7 +246,7 @@ export async function getItemById(req: Request, res: Response): Promise<void> {
 /**
  * Create new item with auto sequence code
  */
-export async function createItem(req: Request, res: Response): Promise<void> {
+export async function createItem(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const validated = createItemSchema.parse(req.body);
 
@@ -295,7 +296,7 @@ export async function createItem(req: Request, res: Response): Promise<void> {
 /**
  * Update item details
  */
-export async function updateItem(req: Request, res: Response): Promise<void> {
+export async function updateItem(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -353,7 +354,7 @@ export async function updateItem(req: Request, res: Response): Promise<void> {
 /**
  * Toggle active status
  */
-export async function toggleItemActive(req: Request, res: Response): Promise<void> {
+export async function toggleItemActive(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {

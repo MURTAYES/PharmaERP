@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
-import { roleGuard } from '../middleware/roleGuard';
+import { authenticate } from '../middleware/auth.js';
+import { roleGuard } from '../middleware/roleGuard.js';
 import {
   getItems,
   searchItems,
@@ -8,7 +8,7 @@ import {
   createItem,
   updateItem,
   toggleItemActive,
-} from '../controllers/itemController';
+} from '../controllers/itemController.js';
 
 const router = Router();
 
