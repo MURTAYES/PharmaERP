@@ -5,6 +5,8 @@ export interface GetItemsParams {
   page?: number;
   limit?: number;
   search?: string;
+  productName?: string;
+  genericName?: string;
   category?: string;
   isActive?: boolean;
   sortBy?: 'name' | 'generic' | 'stock' | 'mrp' | 'createdAt';

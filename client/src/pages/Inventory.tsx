@@ -16,7 +16,8 @@ export const Inventory: React.FC = () => {
 
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+  const [genericSearch, setGenericSearch] = useState('');
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
   const [activeAlertFilter, setActiveAlertFilter] = useState<
@@ -88,8 +89,17 @@ export const Inventory: React.FC = () => {
     try {
       if (activeAlertFilter === 'low_stock') {
         const res = await getLowStockItems();
-        setItems(res.items);
-        setTotalItems(res.count);
+        let filtered = res.items;
+        if (productSearch.trim()) {
+          const reg = new RegExp(productSearch.trim(), 'i');
+          filtered = filtered.filter((it) => reg.test(it.tradeName));
+        }
+        if (genericSearch.trim()) {
+          const reg = new RegExp(genericSearch.trim(), 'i');
+          filtered = filtered.filter((it) => reg.test(it.genericName));
+        }
+        setItems(filtered);
+        setTotalItems(filtered.length);
         setTotalPages(1);
       } else if (activeAlertFilter !== 'all') {
         const res = await getExpiringBatches(activeAlertFilter);
@@ -100,7 +110,15 @@ export const Inventory: React.FC = () => {
             if (!itemMap.has(itm._id)) itemMap.set(itm._id, itm);
           }
         });
-        const extracted = Array.from(itemMap.values());
+        let extracted = Array.from(itemMap.values());
+        if (productSearch.trim()) {
+          const reg = new RegExp(productSearch.trim(), 'i');
+          extracted = extracted.filter((it) => reg.test(it.tradeName));
+        }
+        if (genericSearch.trim()) {
+          const reg = new RegExp(genericSearch.trim(), 'i');
+          extracted = extracted.filter((it) => reg.test(it.genericName));
+        }
         setItems(extracted);
         setTotalItems(extracted.length);
         setTotalPages(1);
@@ -108,7 +126,8 @@ export const Inventory: React.FC = () => {
         const res = await getItems({
           page,
           limit,
-          search: search.trim() || undefined,
+          productName: productSearch.trim() || undefined,
+          genericName: genericSearch.trim() || undefined,
           category: category || undefined,
           sortBy,
           sortOrder,
@@ -122,7 +141,7 @@ export const Inventory: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, search, category, activeAlertFilter, sortBy, sortOrder]);
+  }, [page, limit, productSearch, genericSearch, category, activeAlertFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     loadData();
@@ -523,25 +542,62 @@ export const Inventory: React.FC = () => {
 
           {/* Controls: Search, Category, Sorting, and Page Size */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Search Input */}
+            {/* 1. Product Name Search Input */}
             <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#7A9894]">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
               <input
                 type="text"
-                placeholder="Search name, generic, SKU..."
-                value={search}
+                placeholder="Product Name..."
+                value={productSearch}
                 onChange={(e) => {
-                  setSearch(e.target.value);
+                  setProductSearch(e.target.value);
                   setPage(1);
                 }}
-                className="bg-[#F3F7F6] border-none text-xs rounded-full py-1.5 pl-4 pr-8 w-56 focus:ring-1 focus:ring-[#002F34] text-[#002F34] placeholder-slate-400 font-medium"
+                className="bg-[#F3F7F6] border border-[#DFE7E5] text-xs rounded-full py-1.5 pl-8 pr-7 w-40 sm:w-48 focus:bg-white focus:ring-1 focus:ring-[#002F34] focus:border-[#002F34] text-[#002F34] placeholder-slate-400 font-semibold transition-all shadow-2xs"
               />
-              {search && (
+              {productSearch && (
                 <button
+                  type="button"
                   onClick={() => {
-                    setSearch('');
+                    setProductSearch('');
                     setPage(1);
                   }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* 2. Generic Name Search Input */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#7A9894]">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Generic Name..."
+                value={genericSearch}
+                onChange={(e) => {
+                  setGenericSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="bg-[#F3F7F6] border border-[#DFE7E5] text-xs rounded-full py-1.5 pl-8 pr-7 w-40 sm:w-52 focus:bg-white focus:ring-1 focus:ring-[#002F34] focus:border-[#002F34] text-[#002F34] placeholder-slate-400 font-semibold transition-all shadow-2xs"
+              />
+              {genericSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGenericSearch('');
+                    setPage(1);
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold"
                 >
                   ✕
                 </button>

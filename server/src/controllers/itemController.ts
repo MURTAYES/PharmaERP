@@ -46,6 +46,8 @@ export async function getItems(req: Request, res: Response): Promise<void> {
   try {
     const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 15));
+    const productName = ((req.query.productName || req.query.name) as string)?.trim();
+    const genericName = ((req.query.genericName || req.query.generic) as string)?.trim();
     const search = (req.query.search as string)?.trim();
     const category = (req.query.category as string)?.trim();
     const activeFilter = req.query.isActive;
@@ -62,7 +64,15 @@ export async function getItems(req: Request, res: Response): Promise<void> {
       query.category = category;
     }
 
-    if (search) {
+    if (productName) {
+      query.tradeName = new RegExp(productName, 'i');
+    }
+
+    if (genericName) {
+      query.genericName = new RegExp(genericName, 'i');
+    }
+
+    if (search && !productName && !genericName) {
       const searchRegex = new RegExp(search, 'i');
       query.$or = [
         { tradeName: searchRegex },
