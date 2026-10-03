@@ -1,14 +1,51 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext.tsx';
 import { reportApi } from '../services/reportApi.ts';
+import { getAlertSummary, getExpiringBatches, getLowStockItems } from '../services/alertApi.ts';
+import { getHeldBills, getInvoices } from '../services/posApi.ts';
 
 export function Dashboard() {
+  const { user, role } = useAuth();
+  const isOwner = role === 'owner';
   const [dateFilter, setDateFilter] = useState('Today');
 
+  // Owner KPIs Query
   const { data: kpiData, isLoading: loadingKPIs } = useQuery({
     queryKey: ['dashboardKPIs'],
     queryFn: () => reportApi.getDashboardKPIs(),
+    refetchInterval: 15000,
+  });
+
+  // Pharmacist Operational Alerts Queries
+  const { data: alertSummary } = useQuery({
+    queryKey: ['alertSummary'],
+    queryFn: () => getAlertSummary(),
+    refetchInterval: 20000,
+  });
+
+  const { data: expiringData } = useQuery({
+    queryKey: ['expiringBatchesAlert'],
+    queryFn: () => getExpiringBatches('critical'),
+    refetchInterval: 30000,
+  });
+
+  const { data: lowStockData } = useQuery({
+    queryKey: ['lowStockAlert'],
+    queryFn: () => getLowStockItems(),
+    refetchInterval: 30000,
+  });
+
+  const { data: heldBillsData } = useQuery({
+    queryKey: ['heldBills'],
+    queryFn: () => getHeldBills(),
+    refetchInterval: 10000,
+  });
+
+  const { data: recentInvoicesData } = useQuery({
+    queryKey: ['recentInvoices'],
+    queryFn: () => getInvoices({ page: 1, limit: 6 }),
     refetchInterval: 15000,
   });
 
@@ -23,8 +60,309 @@ export function Dashboard() {
   };
 
   const topMedicines = kpiData?.topMedicines || [];
+  const criticalBatches = expiringData?.batches || [];
+  const lowStockItems = lowStockData?.items || [];
+  const heldBills = heldBillsData?.heldBills || [];
+  const invoices = recentInvoicesData?.invoices || [];
 
-  // Recent dummy transactions for table display if none
+  // ==========================================
+  // PHARMACIST DASHBOARD VIEW
+  // ==========================================
+  if (!isOwner) {
+    return (
+      <div className="space-y-7 max-w-[1440px] w-full mx-auto text-left">
+        {/* Pharmacist Station Hero Banner */}
+        <div className="bg-gradient-to-r from-[#002F34] to-[#014249] rounded-[32px] p-6 sm:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+          {/* Subtle Ambient Background Orbs */}
+          <div className="absolute -right-16 -top-16 w-64 h-64 bg-[#97D8D0]/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-[#D7F1B5]/15 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#D7F1B5] text-[#002F34]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#002F34] animate-ping" />
+                Terminal Ready
+              </span>
+              <span className="text-xs font-semibold text-slate-300">
+                Shift: {user?.fullName || 'Pharmacist'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              Clinical Dispensing Station
+            </h1>
+            <p className="text-xs text-slate-300 max-w-xl">
+              Track real-time counter fulfillment, FEFO batch expiry alerts, low stock reorders, and pending customer bills.
+            </p>
+          </div>
+
+          <div className="relative z-10 flex flex-wrap items-center gap-3">
+            <Link
+              to="/pos"
+              className="px-6 py-3.5 rounded-full bg-[#97D8D0] hover:bg-[#85c7bf] text-[#002F34] font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-transform active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[20px]">point_of_sale</span>
+              <span>Open POS Billing (F2)</span>
+            </Link>
+            <Link
+              to="/inventory"
+              className="px-5 py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 flex items-center gap-2 backdrop-blur-md transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">medication</span>
+              <span>Medicine Finder (F3)</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* 4 Pharmacist Operational KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Card 1: Today's Dispensed Invoices */}
+          <div className="bg-white rounded-3xl p-5 shadow-card border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#D7F1B5]/40 text-[#002F34] flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[24px]">receipt_long</span>
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Invoices Billed</div>
+              <div className="text-2xl font-black text-[#002F34] mt-0.5">{today.invoiceCount}</div>
+              <div className="text-[10px] font-semibold text-emerald-600">Counter active today</div>
+            </div>
+          </div>
+
+          {/* Card 2: Held Bills on Suspended Queue */}
+          <div className="bg-white rounded-3xl p-5 shadow-card border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#F1B5B9]/40 text-[#002F34] flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[24px]">pause_circle</span>
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Held Bills</div>
+              <div className="text-2xl font-black text-[#002F34] mt-0.5">{heldBills.length}</div>
+              <div className="text-[10px] font-semibold text-amber-600">
+                {heldBills.length > 0 ? 'Pending customer checkout' : 'No suspended orders'}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Critical Expiry Batches (< 30d) */}
+          <div className="bg-white rounded-3xl p-5 shadow-card border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[24px]">event_busy</span>
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Expiring Soon (&lt;30d)</div>
+              <div className="text-2xl font-black text-rose-600 mt-0.5">
+                {(alertSummary?.critical30Count || 0) + (alertSummary?.expiredCount || 0)}
+              </div>
+              <div className="text-[10px] font-semibold text-rose-500">FEFO priority dispensing</div>
+            </div>
+          </div>
+
+          {/* Card 4: Low Stock Items (< Reorder Level) */}
+          <div className="bg-white rounded-3xl p-5 shadow-card border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[24px]">inventory_2</span>
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Low Stock Alert</div>
+              <div className="text-2xl font-black text-amber-700 mt-0.5">
+                {alertSummary?.lowStockCount || lowStockItems.length || 0}
+              </div>
+              <div className="text-[10px] font-semibold text-amber-600">Needs restock request</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2-Column Clinical Grid: Expiry Watchlist & Low Stock Alerts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* FEFO Expiry Watchlist */}
+          <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+                  <h2 className="text-sm font-bold text-[#002F34]">Urgent Expiry & FEFO Watchlist</h2>
+                </div>
+                <Link
+                  to="/inventory"
+                  className="text-xs font-bold text-[#00A887] hover:underline flex items-center gap-1"
+                >
+                  <span>View in Inventory</span>
+                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </Link>
+              </div>
+
+              {criticalBatches.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                  <span className="material-symbols-outlined text-[32px] text-emerald-400 mb-1">verified</span>
+                  <p>All active inventory batches are within safe shelf-life limits!</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {criticalBatches.slice(0, 4).map((batch: any, i: number) => (
+                    <div
+                      key={batch._id || i}
+                      className="p-3 rounded-2xl bg-rose-50/60 border border-rose-100 flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-[#002F34]">
+                          {batch.itemId?.tradeName || 'Medicine'} ({batch.itemId?.genericName || ''})
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          Batch: <span className="font-bold text-slate-700">{batch.batchNumber}</span> • Expiry:{' '}
+                          <span className="text-rose-600 font-bold">
+                            {new Date(batch.expiryDate).toLocaleDateString('en-GB')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-black text-[11px]">
+                          {batch.qtySellable} pcs left
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px] text-rose-500">info</span>
+              <span>Always dispense the earliest-expiring batch first (FEFO rule).</span>
+            </div>
+          </div>
+
+          {/* Low Stock Counter Alert */}
+          <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                  <h2 className="text-sm font-bold text-[#002F34]">Low Stock Counter Refill Alerts</h2>
+                </div>
+                <Link
+                  to="/inventory"
+                  className="text-xs font-bold text-[#00A887] hover:underline flex items-center gap-1"
+                >
+                  <span>Check Shelves</span>
+                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </Link>
+              </div>
+
+              {lowStockItems.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                  <span className="material-symbols-outlined text-[32px] text-emerald-400 mb-1">inventory</span>
+                  <p>All medicine counters are adequately stocked!</p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {lowStockItems.slice(0, 4).map((item: any, i: number) => (
+                    <div
+                      key={item._id || i}
+                      className="p-3 rounded-2xl bg-amber-50/60 border border-amber-100 flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-[#002F34]">{item.tradeName}</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          {item.genericName} • {item.form}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-black text-[11px]">
+                          {item.currentStock || 0} / {item.reorderLevel || 10} pcs
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px] text-amber-500">warning</span>
+              <span>Inform store manager to receive new batches before stock drops to zero.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Counter Sales Transactions Table */}
+        <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-4 mb-3">
+            <div>
+              <h2 className="text-base font-bold text-[#002F34]">Recent Counter Dispensing Activity</h2>
+              <p className="text-xs text-slate-400">Invoices issued at the counter</p>
+            </div>
+            <Link
+              to="/invoices"
+              className="bg-[#F3F7F6] hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-full flex items-center space-x-1.5 transition-colors"
+            >
+              <span>View All Invoices →</span>
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="text-slate-400 font-semibold border-b border-slate-50">
+                  <th className="py-3 px-3">Invoice #</th>
+                  <th className="py-3 px-3">Customer</th>
+                  <th className="py-3 px-3">Payment Method</th>
+                  <th className="py-3 px-3 text-center">Items Dispensed</th>
+                  <th className="py-3 px-3">Date / Time</th>
+                  <th className="py-3 px-3 text-right">Receipt</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 font-medium">
+                {invoices.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-slate-400">
+                      No invoices recorded yet today. Click "Open POS Billing (F2)" to start counter sales.
+                    </td>
+                  </tr>
+                ) : (
+                  invoices.slice(0, 5).map((inv: any) => (
+                    <tr key={inv._id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3.5 px-3 font-mono font-bold text-[#002F34]">
+                        {inv.invoiceNumber}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span className="font-bold text-[#002F34]">{inv.customerName || 'Walk-in Patient'}</span>
+                        {inv.customerPhone && (
+                          <div className="text-[10px] text-slate-400">{inv.customerPhone}</div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#F3F7F6] text-[#002F34] uppercase">
+                          {inv.payment?.method || 'Cash'}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-center">
+                        <span className="px-2 py-0.5 bg-[#D7F1B5]/50 rounded-full font-bold text-[#002F34]">
+                          {inv.lines?.length || 1} lines
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-slate-400">
+                        {new Date(inv.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <Link
+                          to="/invoices"
+                          className="text-xs font-bold text-[#00A887] hover:underline px-2 py-1 rounded-md"
+                        >
+                          Print Thermal
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // OWNER EXECUTIVE FINANCIAL DASHBOARD VIEW
+  // ==========================================
   const recentTransactions =
     topMedicines.length > 0
       ? topMedicines.slice(0, 4).map((m: any, idx: number) => {
@@ -94,8 +432,8 @@ export function Dashboard() {
       {/* Overview Title and Date Filter Row */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#002F34]">Sales Overview</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Welcome back, monitor your real-time pharmacy operations.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#002F34]">Sales & Executive Overview</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Welcome back, monitor your real-time pharmacy operations and revenue.</p>
         </div>
 
         {/* Filter Dropdown Button */}
