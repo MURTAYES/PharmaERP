@@ -9,19 +9,23 @@ export const SENSITIVE_PHARMACIST_FIELDS = new Set([
   'costPrice',
   'unitCost',
   'profit',
+  'grossProfit',
   'totalProfit',
   'stockValuation',
   'valuationAtCost',
+  'costValuation',
   'margin',
+  'marginPercent',
   'purchaseTotal',
   'totalCost',
 ]);
 
-export function stripSensitiveFields(data: any): any {
+export function stripSensitiveFields(data: any, role: string = 'pharmacist'): any {
+  if (role === 'owner') return data;
   if (data === null || data === undefined) return data;
 
   if (Array.isArray(data)) {
-    return data.map((item) => stripSensitiveFields(item));
+    return data.map((item) => stripSensitiveFields(item, role));
   }
 
   if (typeof data === 'object' && !(data instanceof Date)) {
@@ -31,7 +35,7 @@ export function stripSensitiveFields(data: any): any {
 
     for (const [key, value] of Object.entries(source)) {
       if (!SENSITIVE_PHARMACIST_FIELDS.has(key)) {
-        sanitized[key] = stripSensitiveFields(value);
+        sanitized[key] = stripSensitiveFields(value, role);
       }
     }
     return sanitized;

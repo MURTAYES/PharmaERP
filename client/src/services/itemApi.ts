@@ -58,3 +58,11 @@ export async function toggleItemActive(id: string): Promise<{ item: Item }> {
   const res = await api.patch<{ item: Item }>(`/items/${id}/toggle-active`);
   return res.data;
 }
+
+export async function getProductDistribution(refresh = false): Promise<import('../types').ProductDistribution> {
+  const res = await api.get<import('../types').ProductDistribution>('/items/distribution', {
+    params: { refresh: refresh ? 'true' : undefined },
+  });
+  return res.data;
+}
+

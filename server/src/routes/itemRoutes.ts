@@ -9,6 +9,7 @@ import {
   updateItem,
   toggleItemActive,
 } from '../controllers/itemController.js';
+import { getProductDistribution } from '../controllers/distributionController.js';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use(authenticate);
 
 router.get('/', getItems);
 router.get('/search', searchItems);
+router.get('/distribution', getProductDistribution);
 router.get('/:id', getItemById);
 router.post('/', createItem);
 router.put('/:id', updateItem);

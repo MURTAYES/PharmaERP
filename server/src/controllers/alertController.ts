@@ -43,6 +43,7 @@ export async function getAlertSummary(_req: Request, res: Response): Promise<voi
       },
       {
         $match: {
+          totalSellablePieces: { $gte: 5 },
           $expr: { $lte: ['$totalSellablePieces', '$lowStockThresholdPieces'] },
         },
       },
@@ -138,6 +139,7 @@ export async function getLowStockItems(_req: Request, res: Response): Promise<vo
       },
       {
         $match: {
+          totalSellablePieces: { $gte: 5 },
           $expr: { $lte: ['$totalSellablePieces', '$lowStockThresholdPieces'] },
         },
       },

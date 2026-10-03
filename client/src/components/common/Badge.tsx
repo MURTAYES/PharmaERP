@@ -15,29 +15,29 @@ export function Badge({
   ...props
 }: BadgeProps) {
   const baseStyles =
-    'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide';
+    'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide select-none';
 
   const variants = {
-    primary: 'bg-primary-container/15 text-primary',
-    secondary: 'bg-secondary-fixed text-on-secondary-fixed',
-    success: 'bg-emerald-100 text-emerald-800',
-    warning: 'bg-amber-100 text-amber-900',
-    error: 'bg-error-container text-on-error-container',
-    neutral: 'bg-surface-container-high text-on-surface-variant',
+    primary: 'bg-primary-50 text-primary-800 border border-primary-200',
+    secondary: 'bg-secondary-50 text-secondary-700 border border-secondary-100',
+    success: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+    warning: 'bg-amber-50 text-amber-900 border border-amber-200',
+    error: 'bg-red-50 text-red-800 border border-red-200',
+    neutral: 'bg-slate-100 text-slate-700 border border-slate-200',
   };
 
   const dotColors = {
     primary: 'bg-primary',
     secondary: 'bg-secondary',
-    success: 'bg-emerald-600',
-    warning: 'bg-amber-600',
-    error: 'bg-error',
-    neutral: 'bg-on-surface-variant',
+    success: 'bg-emerald-500',
+    warning: 'bg-amber-500',
+    error: 'bg-red-500',
+    neutral: 'bg-slate-400',
   };
 
   return (
     <span className={twMerge(clsx(baseStyles, variants[variant], className))} {...props}>
-      {dot && <span className={clsx('w-1.5 h-1.5 rounded-full', dotColors[variant])} />}
+      {dot && <span className={clsx('w-2 h-2 rounded-full', dotColors[variant])} />}
       {children}
     </span>
   );

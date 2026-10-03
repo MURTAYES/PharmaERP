@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Invoice } from '../types';
+import { Invoice, CreditNote } from '../types';
 import { getInvoices } from '../services/posApi';
 import { ThermalReceiptModal } from '../components/pos/ThermalReceiptModal';
+import { SalesReturnModal } from '../components/returns/SalesReturnModal';
+import { CreditNoteReceiptModal } from '../components/returns/CreditNoteReceiptModal';
 import { Button } from '../components/common/Button';
 
 export const Invoices: React.FC = () => {
@@ -17,6 +19,11 @@ export const Invoices: React.FC = () => {
   // Receipt Modal State
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+
+  // Return Modal State
+  const [selectedInvoiceForReturn, setSelectedInvoiceForReturn] = useState<Invoice | null>(null);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [generatedCreditNote, setGeneratedCreditNote] = useState<CreditNote | null>(null);
 
   useEffect(() => {
     loadInvoices();
@@ -194,15 +201,33 @@ export const Invoices: React.FC = () => {
                         ৳ {parseFloat(inv.grandTotal).toFixed(2)}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenReceipt(inv)}
-                          className="gap-1 px-2.5 py-1 text-xs"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">print</span>
-                          Receipt
-                        </Button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenReceipt(inv)}
+                            className="gap-1 px-2.5 py-1 text-xs"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">print</span>
+                            Receipt
+                          </Button>
+
+                          {inv.status !== 'RETURNED_FULL' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedInvoiceForReturn(inv);
+                                setShowReturnModal(true);
+                              }}
+                              className="gap-1 px-2 py-1 text-xs text-amber-800 border-amber-300 hover:bg-amber-50"
+                              title="Process return for this invoice"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">assignment_return</span>
+                              Return
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -246,6 +271,31 @@ export const Invoices: React.FC = () => {
           isOpen={showReceiptModal}
           onClose={() => setShowReceiptModal(false)}
           invoice={selectedInvoice}
+        />
+      )}
+
+      {/* Sales Return Modal */}
+      {showReturnModal && (
+        <SalesReturnModal
+          isOpen={showReturnModal}
+          onClose={() => {
+            setShowReturnModal(false);
+            setSelectedInvoiceForReturn(null);
+          }}
+          initialInvoice={selectedInvoiceForReturn}
+          onSuccess={(creditNote) => {
+            loadInvoices();
+            setGeneratedCreditNote(creditNote);
+          }}
+        />
+      )}
+
+      {/* Credit Note Receipt Modal */}
+      {generatedCreditNote && (
+        <CreditNoteReceiptModal
+          isOpen={!!generatedCreditNote}
+          onClose={() => setGeneratedCreditNote(null)}
+          creditNote={generatedCreditNote}
         />
       )}
     </div>

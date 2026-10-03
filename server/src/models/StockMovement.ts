@@ -5,7 +5,8 @@ export type StockMovementType =
   | 'ADJUST_TRANSFER'
   | 'WRITE_OFF'
   | 'SALE_DEDUCT'
-  | 'RETURN_RESTOCK';
+  | 'RETURN_RESTOCK'
+  | 'SUPPLIER_RETURN';
 
 export type StockBucketType = 'sellable' | 'damaged' | 'expired';
 
@@ -25,7 +26,7 @@ export interface IStockMovement extends Document {
   type: StockMovementType;
   qtyChangePieces: number; // Delta in base pieces (e.g. +100 or -20)
   bucketFrom?: StockBucketType;
-  bucketTo?: StockBucketType | 'write_off';
+  bucketTo?: StockBucketType | 'write_off' | 'supplier_return';
   reasonCategory?: AdjustmentReasonCategory;
   reasonDetail?: string;
   userId: Types.ObjectId;
@@ -48,7 +49,7 @@ const stockMovementSchema = new Schema<IStockMovement>(
     },
     type: {
       type: String,
-      enum: ['RECEIVE', 'ADJUST_TRANSFER', 'WRITE_OFF', 'SALE_DEDUCT', 'RETURN_RESTOCK'],
+      enum: ['RECEIVE', 'ADJUST_TRANSFER', 'WRITE_OFF', 'SALE_DEDUCT', 'RETURN_RESTOCK', 'SUPPLIER_RETURN'],
       required: [true, 'Movement type is required'],
       index: true,
     },

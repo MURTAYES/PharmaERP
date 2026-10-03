@@ -3,15 +3,28 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+
   html, body {
     margin: 0;
     padding: 0;
-    background-color: #faf8ff;
-    color: #131b2e;
+    background-color: #F3F7F6;
+    color: #002F34;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #002F34;
+    letter-spacing: -0.02em;
   }
 }
 
+/* Material Symbols Outlined Icon Styling */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -29,6 +42,29 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Custom pattern for capsule bars matching Behance design */
+.pattern-stripes-pink {
+  background: repeating-linear-gradient(45deg, #F1B5B9, #F1B5B9 4px, #f7d2d5 4px, #f7d2d5 8px);
+}
+.pattern-stripes-lime {
+  background: repeating-linear-gradient(45deg, #D7F1B5, #D7F1B5 4px, #e7f7d1 4px, #e7f7d1 8px);
+}
+.pattern-stripes-mint {
+  background: repeating-linear-gradient(45deg, #97D8D0, #97D8D0 4px, #c3eee8 4px, #c3eee8 8px);
+}
+.pattern-stripes-lavender {
+  background: repeating-linear-gradient(45deg, #B5BFF1, #B5BFF1 4px, #d5dbf8 4px, #d5dbf8 8px);
+}
+.pattern-stripes-peach {
+  background: repeating-linear-gradient(45deg, #FAD6A5, #FAD6A5 4px, #fde7cc 4px, #fde7cc 8px);
+}
+
+/* Donut chart stroke animations */
+.donut-segment {
+  transform-origin: center;
+  transition: stroke-dasharray 0.6s ease;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -36,14 +72,20 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f2f3ff;
+  background: #F3F7F6;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #bcc9c6;
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00685f;
+  background: #97D8D0;
+}
+
+/* Smooth Focus Glow */
+input:focus, select:focus, textarea:focus {
+  outline: none;
 }

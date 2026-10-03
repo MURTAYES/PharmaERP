@@ -173,3 +173,96 @@ export function calculateChangeDue(
     };
   }
 }
+
+export interface RefundLineInput {
+  unitPricePerPiece: string | number;
+  returnedQuantityPieces: number;
+}
+
+export interface CalculatedRefundCharge {
+  name: string;
+  type: 'percentage' | 'fixed';
+  rate: string;
+  refundAmount: string;
+}
+
+export interface CalculatedRefundTotals {
+  subtotalRefund: string;
+  discountRefund: string;
+  netRefundAfterDiscount: string;
+  chargesRefund: CalculatedRefundCharge[];
+  totalChargesRefund: string;
+  grandTotalRefund: string;
+}
+
+/**
+ * Computes proportional refund totals for sales returns.
+ * - Returned item value = returnedQuantityPieces * unitPricePerPiece
+ * - Proportional discount = (subtotalRefund / originalSubtotal) * originalDiscountAmount
+ * - Percentage charges refunded proportionally on net refund amount
+ * - Fixed charges remain non-refundable (0.00 refund)
+ */
+export function calculateRefundPricing(
+  returnedLines: RefundLineInput[],
+  originalSubtotal: string | number,
+  originalDiscountAmount: string | number = 0,
+  originalCharges: ChargeInput[] = []
+): CalculatedRefundTotals {
+  let subtotalRefundDec = new Decimal(0);
+
+  for (const line of returnedLines) {
+    const qtyPcs = Math.floor(line.returnedQuantityPieces);
+    if (qtyPcs <= 0) continue;
+    const pricePerPcsDec = new Decimal(line.unitPricePerPiece || 0);
+    const lineTotalDec = pricePerPcsDec.times(qtyPcs);
+    subtotalRefundDec = subtotalRefundDec.plus(lineTotalDec);
+  }
+
+  const origSubtotalDec = new Decimal(originalSubtotal || 0);
+  const origDiscountDec = new Decimal(originalDiscountAmount || 0);
+
+  let discountRefundDec = new Decimal(0);
+  if (origSubtotalDec.greaterThan(0) && origDiscountDec.greaterThan(0)) {
+    // Proportional ratio = subtotalRefund / originalSubtotal
+    const ratio = subtotalRefundDec.dividedBy(origSubtotalDec);
+    discountRefundDec = origDiscountDec.times(ratio);
+  }
+
+  const netRefundDec = subtotalRefundDec.minus(discountRefundDec);
+
+  const chargesRefund: CalculatedRefundCharge[] = [];
+  let totalChargesRefundDec = new Decimal(0);
+
+  for (const charge of originalCharges) {
+    const rateDec = new Decimal(charge.rate || 0);
+    let chargeRefundDec = new Decimal(0);
+
+    if (charge.type === 'percentage') {
+      // Percentage tax/charge refund = netRefund * (rate / 100)
+      chargeRefundDec = netRefundDec.times(rateDec.dividedBy(100));
+    } else {
+      // Fixed charge (e.g. platform fee/delivery) is non-refundable
+      chargeRefundDec = new Decimal(0);
+    }
+
+    totalChargesRefundDec = totalChargesRefundDec.plus(chargeRefundDec);
+    chargesRefund.push({
+      name: charge.name,
+      type: charge.type,
+      rate: rateDec.toFixed(2),
+      refundAmount: chargeRefundDec.toFixed(2),
+    });
+  }
+
+  const rawGrandTotalRefundDec = netRefundDec.plus(totalChargesRefundDec);
+  const grandTotalRefundDec = rawGrandTotalRefundDec.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+
+  return {
+    subtotalRefund: subtotalRefundDec.toFixed(2),
+    discountRefund: discountRefundDec.toFixed(2),
+    netRefundAfterDiscount: netRefundDec.toFixed(2),
+    chargesRefund,
+    totalChargesRefund: totalChargesRefundDec.toFixed(2),
+    grandTotalRefund: grandTotalRefundDec.toFixed(2),
+  };
+}

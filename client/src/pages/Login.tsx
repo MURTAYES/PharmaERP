@@ -32,29 +32,31 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      {/* Ambient background mint circles */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-secondary-fixed/30 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-primary-fixed/25 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-slate-900 flex flex-col justify-center items-center p-4 relative overflow-hidden selection:bg-teal-500 selection:text-white">
+      {/* Ambient Glow Lights */}
+      <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-surface-container-lowest rounded-3xl p-8 sm:p-10 shadow-clinical border border-outline-variant/30 flex flex-col z-10">
-        {/* Header Branding */}
-        <div className="flex flex-col items-center text-center gap-3 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-on-primary shadow-clinical-glow">
+      <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-9 shadow-2xl border border-slate-200/80 flex flex-col z-10 animate-in fade-in zoom-in-95 duration-200">
+        {/* Header Hero Branding */}
+        <div className="flex flex-col items-center text-center gap-3 mb-7">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-md">
             <span className="material-symbols-outlined text-[32px]">medical_services</span>
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-on-surface tracking-tight">PharmERP</h1>
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary mt-0.5">
-              Clinical Pharmacy Management
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              Pharm<span className="text-teal-600">ERP</span>
+            </h1>
+            <p className="text-xs font-semibold text-slate-500 mt-1">
+              Clinical Pharmacy POS & Inventory Suite
             </p>
           </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-3.5 rounded-xl bg-error-container text-on-error-container text-xs font-semibold flex items-center gap-2 animate-in fade-in">
-            <span className="material-symbols-outlined text-[18px]">error</span>
+          <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+            <span className="material-symbols-outlined text-[18px] text-rose-600">error</span>
             <span>{error}</span>
           </div>
         )}
@@ -82,24 +84,32 @@ export function Login() {
             required
           />
 
-          <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="mt-2 w-full">
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            isLoading={isLoading}
+            className="mt-2 w-full py-3.5 text-sm font-extrabold shadow-md bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600"
+          >
             Sign In to Terminal
           </Button>
         </form>
 
-        {/* Demo Credentials Helper */}
-        <div className="mt-8 pt-6 border-t border-surface-container flex flex-col gap-2 text-center text-xs text-on-surface-variant">
-          <span className="font-semibold uppercase tracking-wider text-[10px]">Default Credentials</span>
-          <div className="flex justify-center gap-4 font-mono text-[11px]">
+        {/* Demo Credentials Quick Switcher */}
+        <div className="mt-7 pt-4 border-t border-slate-100 flex flex-col gap-2 text-center text-xs text-slate-500">
+          <span className="font-bold uppercase tracking-widest text-[10px] text-slate-400">
+            Quick Fill Demo Accounts:
+          </span>
+          <div className="flex justify-center gap-2 font-mono text-[11px]">
             <button
               type="button"
               onClick={() => {
                 setUsername('admin');
                 setPassword('admin123');
               }}
-              className="px-2 py-1 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors text-primary"
+              className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 border border-teal-200/80 rounded-lg transition-colors text-teal-800 font-bold cursor-pointer"
             >
-              Owner: admin / admin123
+              Owner: admin
             </button>
             <button
               type="button"
@@ -107,9 +117,9 @@ export function Login() {
                 setUsername('pharmacist');
                 setPassword('pharma123');
               }}
-              className="px-2 py-1 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors text-secondary"
+              className="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-200/80 rounded-lg transition-colors text-sky-800 font-bold cursor-pointer"
             >
-              Staff: pharmacist / pharma123
+              Pharmacist: pharmacist
             </button>
           </div>
         </div>

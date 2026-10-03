@@ -113,7 +113,7 @@ export async function getItems(req: Request, res: Response): Promise<void> {
         totalExpiredPieces: agg.totalExpiredPieces,
         batchCount: agg.batchCount,
         earliestExpiry: agg.earliestExpiry,
-        isLowStock: agg.totalSellablePieces <= item.lowStockThresholdPieces,
+        isLowStock: agg.totalSellablePieces >= 5 && agg.totalSellablePieces <= item.lowStockThresholdPieces,
       };
     });
 
@@ -200,7 +200,7 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
         totalPiecesPerBox: totalPcsBox,
         lowStockThresholdPieces: item.lowStockThresholdPieces,
         totalSellablePieces,
-        isLowStock: totalSellablePieces <= item.lowStockThresholdPieces,
+        isLowStock: totalSellablePieces >= 5 && totalSellablePieces <= item.lowStockThresholdPieces,
         earliestBatch: itemBatches.length > 0 ? itemBatches[0] : null,
         batches: itemBatches,
       };

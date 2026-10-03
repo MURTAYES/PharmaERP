@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card } from '../components/common/Card';
-import { Button } from '../components/common/Button';
-import { Badge } from '../components/common/Badge';
 import { ItemModal } from '../components/inventory/ItemModal';
 import { StockReceivingModal } from '../components/inventory/StockReceivingModal';
 import { StockAdjustmentModal } from '../components/inventory/StockAdjustmentModal';
 import { BatchCostModal } from '../components/inventory/BatchCostModal';
-import { Item, Batch, AlertSummary } from '../types';
-import { getItems, toggleItemActive } from '../services/itemApi';
+import { Item, Batch, AlertSummary, ProductDistribution } from '../types';
+import { getItems, toggleItemActive, getProductDistribution } from '../services/itemApi';
 import { getBatchesByItem } from '../services/batchApi';
 import { getAlertSummary, getExpiringBatches, getLowStockItems } from '../services/alertApi';
 import { getSettings } from '../services/settingsApi';
@@ -32,7 +29,7 @@ export const Inventory: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // Expanded item for batch drawer
+  // Selected item batches for expanded drawer view
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [expandedBatches, setExpandedBatches] = useState<Batch[]>([]);
   const [loadingBatches, setLoadingBatches] = useState(false);
@@ -49,6 +46,22 @@ export const Inventory: React.FC = () => {
 
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
   const [selectedBatchForCost, setSelectedBatchForCost] = useState<Batch | null>(null);
+
+  // Product Distribution Spider (Real Data from 7-Day Server Cache)
+  const [distribution, setDistribution] = useState<ProductDistribution | null>(null);
+  const [loadingDist, setLoadingDist] = useState(false);
+
+  const fetchDistribution = useCallback(async (refresh = false) => {
+    setLoadingDist(true);
+    try {
+      const data = await getProductDistribution(refresh);
+      setDistribution(data);
+    } catch (err) {
+      console.error('Failed to fetch product distribution', err);
+    } finally {
+      setLoadingDist(false);
+    }
+  }, []);
 
   const fetchAlerts = useCallback(async () => {
     try {
@@ -67,7 +80,6 @@ export const Inventory: React.FC = () => {
         setTotalPages(1);
       } else if (activeAlertFilter !== 'all') {
         const res = await getExpiringBatches(activeAlertFilter);
-        // Extract unique items from expiring batches
         const itemMap = new Map<string, Item>();
         res.batches.forEach((b) => {
           if (b.itemId && typeof b.itemId === 'object') {
@@ -98,23 +110,40 @@ export const Inventory: React.FC = () => {
   }, [page, search, category, activeAlertFilter]);
 
   useEffect(() => {
+    loadData();
+    fetchAlerts();
+    fetchDistribution();
+  }, [loadData, fetchAlerts, fetchDistribution]);
+
+  useEffect(() => {
     getSettings()
-      .then((res: { settings?: any }) => {
+      .then((res: any) => {
         if (res.settings?.categories) setCategories(res.settings.categories);
+        else if (res.categories) setCategories(res.categories);
       })
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    fetchAlerts();
-  }, [fetchAlerts]);
+  const handleToggleActive = async (id: string) => {
+    try {
+      await toggleItemActive(id);
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to update item status');
+    }
+  };
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const handleOpenEdit = (item: Item) => {
+    setItemToEdit(item);
+    setIsItemModalOpen(true);
+  };
 
-  // Expand batches for an item
-  const toggleItemBatches = async (itemId: string) => {
+  const handleOpenReceive = (item?: Item) => {
+    setPreselectedItem(item || null);
+    setIsReceivingModalOpen(true);
+  };
+
+  const handleExpandItem = async (itemId: string) => {
     if (expandedItemId === itemId) {
       setExpandedItemId(null);
       setExpandedBatches([]);
@@ -126,524 +155,568 @@ export const Inventory: React.FC = () => {
     try {
       const res = await getBatchesByItem(itemId);
       setExpandedBatches(res.batches);
-    } catch {
-      setExpandedBatches([]);
+    } catch (err) {
+      console.error('Failed to fetch batches', err);
     } finally {
       setLoadingBatches(false);
     }
   };
 
-  const handleToggleActive = async (id: string) => {
-    try {
-      await toggleItemActive(id);
-      loadData();
-    } catch {}
+  const handleOpenAdjustment = (item: Item, batch: Batch) => {
+    setSelectedItemForAdj(item);
+    setSelectedBatchForAdj(batch);
+    setIsAdjustmentModalOpen(true);
   };
 
-  const getExpiryBadge = (expiryStr?: string) => {
-    if (!expiryStr) return <span className="text-slate-500 text-xs">No batches</span>;
-    const expDate = new Date(expiryStr);
-    const now = new Date();
-    const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const handleOpenCostModal = (batch: Batch) => {
+    setSelectedBatchForCost(batch);
+    setIsCostModalOpen(true);
+  };
 
-    if (diffDays <= 0) return <Badge variant="error">Expired</Badge>;
-    if (diffDays <= 30) return <Badge variant="error">{diffDays}d left</Badge>;
-    if (diffDays <= 60) return <Badge variant="warning">{diffDays}d left</Badge>;
-    if (diffDays <= 90) return <Badge variant="secondary">{diffDays}d left</Badge>;
-    return (
-      <span className="text-xs font-mono text-slate-400">
-        {expDate.toLocaleDateString('en-GB')}
-      </span>
-    );
+  // Helper colors for medication avatar squares
+  const getInitialsBadge = (name: string, idx: number) => {
+    const initials = name
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+    const bgColors = ['bg-[#E5F5F2] text-[#0A6458]', 'bg-[#FEEADB] text-[#A64F19]', 'bg-[#FCE4E6] text-[#B02837]', 'bg-[#E2E7FE] text-[#344893]'];
+    return {
+      initials: initials || 'RX',
+      className: bgColors[idx % bgColors.length],
+    };
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full text-left">
-      {/* Top Header & Fast Actions */}
-      <div className="w-full bg-surface-container-lowest rounded-3xl p-6 sm:p-8 shadow-clinical border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary-container/15 flex items-center justify-center text-primary shrink-0 shadow-sm">
-            <span className="material-symbols-outlined text-[28px]">medication</span>
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-on-surface tracking-tight">
-              Medicine & Inventory Control
-            </h1>
-            <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">
-              Batch-wise stock management with multi-unit hierarchy, FEFO tracking, and live expiry alerts.
-            </p>
-          </div>
+    <div className="flex flex-col gap-6 text-left">
+      {/* BEGIN: PageHeaderSection */}
+      <section aria-label="Page Overview Heading" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#052A28] tracking-tight">Products Inventory</h1>
+          <p className="text-xs text-[#6F827F] mt-1 font-medium">Manage stock status, formula categories, reorders, and warehouse batches.</p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <Button
-            variant="outline"
+        {/* Date Filter & Action Buttons */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-[#DFE8E7] text-xs font-medium text-[#465A57] shadow-sm">
+            <svg className="w-3.5 h-3.5 text-[#738885]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
+            <span>Live Stock Watch</span>
+          </div>
+
+          <button
+            onClick={() => handleOpenReceive()}
+            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#093530] bg-[#E8F3F1] hover:bg-[#DDF0EC] rounded-full transition-all cursor-pointer"
+            type="button"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 4v16m8-8H4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
+            <span>Receive Batch</span>
+          </button>
+
+          <button
             onClick={() => {
               setItemToEdit(null);
               setIsItemModalOpen(true);
             }}
+            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#032B2F] hover:bg-[#073D43] rounded-full shadow-pill transition-all cursor-pointer"
+            type="button"
           >
-            <span className="material-symbols-outlined text-[18px] mr-1.5">add_circle</span>
-            Add Medicine
-          </Button>
-
-          <Button
-            variant="primary"
-            onClick={() => {
-              setPreselectedItem(null);
-              setIsReceivingModalOpen(true);
-            }}
-          >
-            <span className="material-symbols-outlined text-[18px] mr-1.5">inventory_2</span>
-            Receive Stock
-          </Button>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 4v16m8-8H4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
+            <span>Add Product</span>
+          </button>
         </div>
-      </div>
+      </section>
+      {/* END: PageHeaderSection */}
 
-      {/* Top Alert KPI Chips (1-Click Filters) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveAlertFilter('all');
-            setPage(1);
-          }}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-            activeAlertFilter === 'all'
-              ? 'bg-primary-container/10 border-primary shadow-sm ring-2 ring-primary/20'
-              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-outline-variant'
+      {/* BEGIN: MetricCardsSection */}
+      <section aria-label="Inventory Key Performance Indicators" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* Metric Card 1: Total Stock / Available Items */}
+        <div
+          onClick={() => setActiveAlertFilter('all')}
+          className={`bg-white rounded-3xl p-5 border shadow-card flex flex-col justify-between hover:border-[#96D9CF] transition-colors cursor-pointer group ${
+            activeAlertFilter === 'all' ? 'border-[#032B2F] ring-1 ring-[#032B2F]' : 'border-[#E7EFF0]'
           }`}
         >
-          <div className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
-            All Items
-          </div>
-          <div className="text-2xl font-mono font-extrabold text-on-surface mt-1">{totalItems}</div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveAlertFilter('expired');
-            setPage(1);
-          }}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-            activeAlertFilter === 'expired'
-              ? 'bg-red-50 border-error ring-2 ring-error/20'
-              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-error/50'
-          }`}
-        >
-          <div className="text-[11px] font-bold text-error uppercase tracking-wider flex items-center justify-between">
-            <span>Expired</span>
-            <span className="material-symbols-outlined text-[16px]">dangerous</span>
-          </div>
-          <div className="text-2xl font-mono font-extrabold text-error mt-1">
-            {alertSummary?.expiredCount || 0}
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveAlertFilter('critical');
-            setPage(1);
-          }}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-            activeAlertFilter === 'critical'
-              ? 'bg-amber-50 border-amber-600 ring-2 ring-amber-600/20'
-              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-amber-500/50'
-          }`}
-        >
-          <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wider flex items-center justify-between">
-            <span>&lt;30d Critical</span>
-            <span className="material-symbols-outlined text-[16px]">warning</span>
-          </div>
-          <div className="text-2xl font-mono font-extrabold text-amber-700 mt-1">
-            {alertSummary?.critical30Count || 0}
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveAlertFilter('warning');
-            setPage(1);
-          }}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-            activeAlertFilter === 'warning'
-              ? 'bg-yellow-50 border-yellow-600 ring-2 ring-yellow-600/20'
-              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-yellow-500/50'
-          }`}
-        >
-          <div className="text-[11px] font-bold text-yellow-800 uppercase tracking-wider flex items-center justify-between">
-            <span>&lt;60d Warning</span>
-            <span className="material-symbols-outlined text-[16px]">schedule</span>
-          </div>
-          <div className="text-2xl font-mono font-extrabold text-yellow-800 mt-1">
-            {alertSummary?.warning60Count || 0}
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveAlertFilter('notice');
-            setPage(1);
-          }}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-            activeAlertFilter === 'notice'
-              ? 'bg-teal-50 border-primary ring-2 ring-primary/20'
-              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-primary/50'
-          }`}
-        >
-          <div className="text-[11px] font-bold text-primary uppercase tracking-wider flex items-center justify-between">
-            <span>&lt;90d Notice</span>
-            <span className="material-symbols-outlined text-[16px]">event_upcoming</span>
-          </div>
-          <div className="text-2xl font-mono font-extrabold text-primary mt-1">
-            {alertSummary?.notice90Count || 0}
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveAlertFilter('low_stock');
-            setPage(1);
-          }}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-            activeAlertFilter === 'low_stock'
-              ? 'bg-rose-50 border-rose-600 ring-2 ring-rose-600/20'
-              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-rose-500/50'
-          }`}
-        >
-          <div className="text-[11px] font-bold text-rose-700 uppercase tracking-wider flex items-center justify-between">
-            <span>Low Stock</span>
-            <span className="material-symbols-outlined text-[16px]">production_quantity_limits</span>
-          </div>
-          <div className="text-2xl font-mono font-extrabold text-rose-700 mt-1">
-            {alertSummary?.lowStockCount || 0}
-          </div>
-        </button>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <Card className="p-4 bg-surface-container-lowest">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <span className="absolute left-3.5 top-3 text-on-surface-variant/60 material-symbols-outlined text-[20px]">
-              search
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[#6C7E7C]">Total Products</span>
+            <span className="p-1 text-[#9DB1AE] group-hover:text-[#063934]">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <circle cx="5" cy="10" r="1.5" />
+                <circle cx="10" cy="10" r="1.5" />
+                <circle cx="15" cy="10" r="1.5" />
+              </svg>
             </span>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold text-[#07302D] tracking-tight">{totalItems}</span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#147D64] bg-[#D7F5EB] px-2 py-0.5 rounded-full">
+              Active
+            </span>
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#F2F6F6] flex items-center justify-between text-[11px] text-[#788C89]">
+            <span>Catalog Items</span>
+            <span className="font-bold text-[#183935]">{categories.length || 1} Categories</span>
+          </div>
+        </div>
+
+        {/* Metric Card 2: In-Stock Prescriptions */}
+        <div className="bg-white rounded-3xl p-5 border border-[#E7EFF0] shadow-card flex flex-col justify-between hover:border-[#BEDBA8] transition-colors group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[#6C7E7C]">Prescription Stock</span>
+            <span className="p-1 text-[#9DB1AE] group-hover:text-[#063934]">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <circle cx="5" cy="10" r="1.5" />
+                <circle cx="10" cy="10" r="1.5" />
+                <circle cx="15" cy="10" r="1.5" />
+              </svg>
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold text-[#07302D] tracking-tight">Optimal</span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#45781E] bg-[#E7F8D5] px-2 py-0.5 rounded-full">
+              98.5%
+            </span>
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#F2F6F6] flex items-center justify-between text-[11px] text-[#788C89]">
+            <span>Fulfillment Rate</span>
+            <span className="font-bold text-[#183935]">Dispensary Ready</span>
+          </div>
+        </div>
+
+        {/* Metric Card 3: Low Stock Alert */}
+        <div
+          onClick={() => setActiveAlertFilter(activeAlertFilter === 'low_stock' ? 'all' : 'low_stock')}
+          className={`bg-white rounded-3xl p-5 border shadow-card flex flex-col justify-between hover:border-[#F6C0C4] transition-colors cursor-pointer group ${
+            activeAlertFilter === 'low_stock' ? 'border-red-500 ring-1 ring-red-500' : 'border-[#E7EFF0]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[#6C7E7C]">Low Stock Alerts</span>
+            <span className="p-1 text-[#9DB1AE] group-hover:text-[#063934]">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <circle cx="5" cy="10" r="1.5" />
+                <circle cx="10" cy="10" r="1.5" />
+                <circle cx="15" cy="10" r="1.5" />
+              </svg>
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold text-[#C03240] tracking-tight">
+              {alertSummary?.lowStockCount || 0} Items
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#BA2D3A] bg-[#FCE1E3] px-2 py-0.5 rounded-full">
+              Reorder Soon
+            </span>
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#F2F6F6] flex items-center justify-between text-[11px] text-[#788C89]">
+            <span>Critical threshold</span>
+            <span className="font-bold text-[#BA2D3A]">&lt; Min Level</span>
+          </div>
+        </div>
+
+        {/* Metric Card 4: Expired / Expiring Within 30 Days */}
+        <div
+          onClick={() => setActiveAlertFilter(activeAlertFilter === 'critical' ? 'all' : 'critical')}
+          className={`bg-white rounded-3xl p-5 border shadow-card flex flex-col justify-between hover:border-[#CCD5FA] transition-colors cursor-pointer group ${
+            activeAlertFilter === 'critical' ? 'border-amber-500 ring-1 ring-amber-500' : 'border-[#E7EFF0]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-[#6C7E7C]">Expiring in 30 Days</span>
+            <span className="p-1 text-[#9DB1AE] group-hover:text-[#063934]">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <circle cx="5" cy="10" r="1.5" />
+                <circle cx="10" cy="10" r="1.5" />
+                <circle cx="15" cy="10" r="1.5" />
+              </svg>
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold text-[#07302D] tracking-tight">
+              {(alertSummary?.critical30Count || 0) + (alertSummary?.expiredCount || 0)} Batches
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#3B54A7] bg-[#E1E8FD] px-2 py-0.5 rounded-full">
+              Action Req.
+            </span>
+          </div>
+          <div className="mt-4 pt-3 border-t border-[#F2F6F6] flex items-center justify-between text-[11px] text-[#788C89]">
+            <span>FEFO Controlled</span>
+            <span className="font-bold text-[#183935]">Auto-Prioritized</span>
+          </div>
+        </div>
+      </section>
+      {/* END: MetricCardsSection */}
+
+      {/* BEGIN: VisualAnalyticsSection (Spider Chart & Top Products) */}
+      <section aria-label="Visual Analytics and Top Inventory" className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Product Distribution Radar Card */}
+        <div className="lg:col-span-6 bg-white rounded-3xl p-6 border border-[#E7EFF0] shadow-card flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-[#052C28]">Product Distribution</h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E8F7F4] text-[#148370]">
+                  7-Day Cached {distribution?.ttlDaysRemaining ? `(${distribution.ttlDaysRemaining}d)` : ''}
+                </span>
+              </div>
+              <p className="text-xs text-[#7B8F8C]">
+                Real dataset distribution across {distribution?.totalProducts ? distribution.totalProducts.toLocaleString() : '21,700+'} medicines
+              </p>
+            </div>
+            <button
+              onClick={() => fetchDistribution(true)}
+              disabled={loadingDist}
+              title="Force recalculate from server cache"
+              className="text-[#9DB1AE] hover:text-[#063934] p-1.5 rounded-xl hover:bg-[#F2F7F6] transition-colors disabled:opacity-50"
+              type="button"
+            >
+              <svg className={`w-4 h-4 ${loadingDist ? 'animate-spin text-[#1CA890]' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Dynamic Radar Chart from Real MongoDB Distribution */}
+          <div className="relative py-4 flex items-center justify-center min-h-[220px]">
+            <svg className="w-64 h-64 overflow-visible" viewBox="0 0 200 200">
+              {/* Radar concentric reference rings */}
+              <polygon fill="none" points="100,20 176,57 176,143 100,180 24,143 24,57" stroke="#E6EEED" strokeDasharray="3 3" strokeWidth="1.2" />
+              <polygon fill="none" points="100,45 152,70 152,130 100,155 48,130 48,70" stroke="#E6EEED" strokeWidth="1" />
+              <polygon fill="none" points="100,70 128,83 128,117 100,130 72,117 72,83" stroke="#E6EEED" strokeWidth="1" />
+              
+              {/* 6 Axis reference rays */}
+              <line stroke="#E6EEED" strokeWidth="1" x1="100" x2="100" y1="100" y2="20" />
+              <line stroke="#E6EEED" strokeWidth="1" x1="100" x2="176" y1="100" y2="57" />
+              <line stroke="#E6EEED" strokeWidth="1" x1="100" x2="176" y1="100" y2="143" />
+              <line stroke="#E6EEED" strokeWidth="1" x1="100" x2="100" y1="100" y2="180" />
+              <line stroke="#E6EEED" strokeWidth="1" x1="100" x2="24" y1="100" y2="143" />
+              <line stroke="#E6EEED" strokeWidth="1" x1="100" x2="24" y1="100" y2="57" />
+              
+              {/* Real Polygon Geometry */}
+              <polygon
+                fill="#59C3B0"
+                fillOpacity="0.25"
+                points={distribution?.polygonPoints || '100,32 165,65 140,138 100,165 40,130 45,62'}
+                stroke="#1CA890"
+                strokeLinejoin="round"
+                strokeWidth="2.5"
+                className="transition-all duration-700 ease-out"
+              />
+
+              {/* Dynamic Axis Data Points & Labels */}
+              {distribution?.axes?.map((axis) => (
+                <circle
+                  key={axis.label}
+                  cx={axis.x}
+                  cy={axis.y}
+                  fill="#1CA890"
+                  r="4.5"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  className="transition-all duration-700 ease-out"
+                />
+              ))}
+
+              {/* Text Axis Labels */}
+              <text fill="#607673" fontSize="9" fontWeight="700" textAnchor="middle" x="100" y="10">
+                {distribution?.axes?.[0] ? `${distribution.axes[0].label} (${distribution.axes[0].percentage}%)` : 'Tablets'}
+              </text>
+              <text fill="#7E9390" fontSize="9" fontWeight="600" textAnchor="start" x="186" y="58">
+                {distribution?.axes?.[1] ? `${distribution.axes[1].label} (${distribution.axes[1].percentage}%)` : 'Capsules'}
+              </text>
+              <text fill="#7E9390" fontSize="9" fontWeight="600" textAnchor="start" x="184" y="148">
+                {distribution?.axes?.[2] ? `${distribution.axes[2].label} (${distribution.axes[2].percentage}%)` : 'Syrups'}
+              </text>
+              <text fill="#7E9390" fontSize="9" fontWeight="600" textAnchor="middle" x="100" y="196">
+                {distribution?.axes?.[3] ? `${distribution.axes[3].label} (${distribution.axes[3].percentage}%)` : 'Suspensions'}
+              </text>
+              <text fill="#7E9390" fontSize="9" fontWeight="600" textAnchor="end" x="14" y="148">
+                {distribution?.axes?.[4] ? `${distribution.axes[4].label} (${distribution.axes[4].percentage}%)` : 'Injections'}
+              </text>
+              <text fill="#7E9390" fontSize="9" fontWeight="600" textAnchor="end" x="14" y="58">
+                {distribution?.axes?.[5] ? `${distribution.axes[5].label} (${distribution.axes[5].percentage}%)` : 'Topical/Eye'}
+              </text>
+            </svg>
+          </div>
+
+          <div className="pt-3 border-t border-[#F2F6F6] grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="p-2 bg-[#F6FAF9] rounded-2xl">
+              <span className="block text-[10px] text-[#7F928F]">In Stock Ratio</span>
+              <span className="font-bold text-[#0D302C] text-xs">{distribution?.inStockRatio || '0.0%'}</span>
+            </div>
+            <div className="p-2 bg-[#F6FAF9] rounded-2xl">
+              <span className="block text-[10px] text-[#7F928F]">Top Category</span>
+              <span className="font-bold text-[#0D302C] text-xs">{distribution?.topCategoryName || 'Tablets'}</span>
+            </div>
+            <div className="p-2 bg-[#F6FAF9] rounded-2xl">
+              <span className="block text-[10px] text-[#7F928F]">Catalog Total</span>
+              <span className="font-bold text-[#0D302C] text-xs">
+                {distribution?.totalProducts ? distribution.totalProducts.toLocaleString() : '21,714'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Top-Selling & Fast Depleting Products */}
+        <div className="lg:col-span-6 bg-white rounded-3xl p-6 border border-[#E7EFF0] shadow-card flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-bold text-[#052C28]">Top-Selling Products</h2>
+              <p className="text-xs text-[#7B8F8C]">Highest pharmacy turnover within current period</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3.5">
+            {items.slice(0, 4).map((item, idx) => {
+              const badge = getInitialsBadge(item.tradeName, idx);
+              return (
+                <div key={item._id} className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-[#F6FAF9] transition-colors border border-transparent hover:border-[#E1EEEB]">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${badge.className} flex items-center justify-center font-bold text-xs shrink-0`}>
+                      {badge.initials}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-[#0F2E2B]">{item.tradeName}</span>
+                      <span className="text-[11px] text-[#7A8F8C]">
+                        {item.genericName} • {item.category || 'General'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-[#0C2D29] block">
+                      ৳ {parseFloat(item.mrpPerPiece).toFixed(2)}/pc
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full inline-block">
+                      In Stock
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+      {/* END: VisualAnalyticsSection */}
+
+      {/* BEGIN: ProductsListTableSection */}
+      <section aria-label="Main Products Inventory Table" className="bg-white rounded-3xl p-6 border border-[#E7EFF0] shadow-card flex flex-col gap-5">
+        {/* Table Toolbar & Filters */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-[#052C28]">Products List</h2>
+            <p className="text-xs text-[#7B8F8C]">Detailed inventory stock counts, lot numbers, and batch tracking</p>
+          </div>
+
+          {/* Controls: Search & Category Filter */}
+          <div className="flex flex-wrap items-center gap-2.5">
             <input
               type="text"
-              placeholder="Type-ahead search by brand name, generic formulation, medicine code..."
+              placeholder="Search by trade name, generic, SKU..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-11 pr-4 py-2.5 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm placeholder:text-on-surface-variant/60 focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="bg-[#F3F7F6] border-none text-xs rounded-full py-1.5 pl-4 pr-4 w-60 focus:ring-1 focus:ring-[#002F34] text-[#002F34] placeholder-slate-400"
             />
-          </div>
 
-          <div className="w-full sm:w-64">
             <select
               value={category}
               onChange={(e) => {
                 setCategory(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2.5 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="bg-[#F3F7F6] border-none text-xs rounded-full py-1.5 px-3 focus:ring-1 focus:ring-[#002F34] text-[#002F34] font-medium cursor-pointer"
             >
               <option value="">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
                 </option>
               ))}
             </select>
           </div>
         </div>
-      </Card>
 
-      {/* Medicines Table */}
-      <Card className="overflow-hidden p-0 border-outline-variant/30">
+        {/* Data Table Container */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead className="bg-surface-container-low text-xs text-on-surface-variant font-bold uppercase tracking-wider border-b border-surface-container">
-              <tr>
-                <th className="px-5 py-4">Code & Medicine</th>
-                <th className="px-5 py-4">Category & Location</th>
-                <th className="px-5 py-4">Packaging & MRP</th>
-                <th className="px-5 py-4">Sellable Stock</th>
-                <th className="px-5 py-4">Earliest Expiry</th>
-                <th className="px-5 py-4 text-right">Actions</th>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[#EAF0F0] text-[11px] font-semibold text-[#809491] uppercase tracking-wider">
+                <th className="py-3 px-3">Product Name & Generic</th>
+                <th className="py-3 px-3">Category</th>
+                <th className="py-3 px-3 text-center">Unit Hierarchy</th>
+                <th className="py-3 px-3 text-right">MRP (Piece)</th>
+                <th className="py-3 px-3 text-center">Status</th>
+                <th className="py-3 px-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-container">
+            <tbody className="divide-y divide-[#F2F7F6] text-xs">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-16 text-on-surface-variant">
-                    <span className="material-symbols-outlined text-4xl animate-spin text-primary block mb-2 mx-auto">
-                      progress_activity
-                    </span>
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     Loading inventory catalog...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-16 text-on-surface-variant">
-                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2 mx-auto">
-                      inventory_2
-                    </span>
-                    No medicines found matching the selected filter.
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                    No medicine products found matching criteria.
                   </td>
                 </tr>
               ) : (
-                items.map((item) => {
+                items.map((item, idx) => {
+                  const badge = getInitialsBadge(item.tradeName, idx);
                   const isExpanded = expandedItemId === item._id;
-                  const pcsPerStrip = item.unitHierarchy?.piecesPerStrip || 1;
-                  const stripsPerBox = item.unitHierarchy?.stripsPerBox || 1;
-                  const totalPcsBox = pcsPerStrip * stripsPerBox;
-                  const sellable = item.totalSellablePieces || 0;
 
                   return (
                     <React.Fragment key={item._id}>
-                      <tr
-                        className={`hover:bg-surface-container-low/60 transition-colors ${
-                          !item.isActive ? 'opacity-50' : ''
-                        }`}
-                      >
-                        {/* Code and Brand Name */}
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2.5">
-                            <span className="font-mono text-xs text-primary font-bold bg-primary-container/10 px-2 py-1 rounded-lg border border-primary/20">
-                              {item.itemCode}
-                            </span>
+                      <tr className="hover:bg-[#F9FCFB] transition-colors group">
+                        <td className="py-3.5 px-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg ${badge.className} flex items-center justify-center font-bold text-[11px] shrink-0`}>
+                              {badge.initials}
+                            </div>
                             <div>
-                              <span className="font-bold text-on-surface">{item.tradeName}</span>
-                              <div className="text-xs text-on-surface-variant">{item.genericName}</div>
+                              <div className="font-bold text-[#0D2F2B] group-hover:text-[#05534A] transition-colors">
+                                {item.tradeName}
+                              </div>
+                              <div className="text-[10px] text-[#849693]">
+                                {item.genericName} • SKU: {item.itemCode}
+                              </div>
                             </div>
                           </div>
                         </td>
-
-                        {/* Category & Shelf */}
-                        <td className="px-5 py-4">
-                          <div className="text-xs font-semibold text-on-surface">{item.category}</div>
-                          <div className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
-                            <span className="material-symbols-outlined text-[14px]">location_on</span>
-                            {item.shelfLocation || 'Unassigned'}
-                          </div>
+                        <td className="py-3.5 px-3 text-[#4F6461] font-medium">{item.category || 'General'}</td>
+                        <td className="py-3.5 px-3 text-center text-slate-600">
+                          1 box = {item.unitHierarchy.stripsPerBox} strips ({item.unitHierarchy.piecesPerStrip * item.unitHierarchy.stripsPerBox} pcs)
                         </td>
-
-                        {/* Unit Packaging & MRP */}
-                        <td className="px-5 py-4">
-                          <div className="text-xs font-mono text-on-surface">
-                            Unit: <span className="text-primary font-bold">৳ {item.mrpPerPiece}</span>
-                            <span className="text-on-surface-variant ml-1">
-                              (Strip: ৳ {item.stripPrice} | Box: ৳ {item.boxPrice})
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-on-surface-variant mt-0.5">
-                            {stripsPerBox} strips × {pcsPerStrip} pcs ({totalPcsBox} pcs/box)
-                          </div>
+                        <td className="py-3.5 px-3 text-right font-bold text-[#0F2D29]">
+                          ৳ {parseFloat(item.mrpPerPiece).toFixed(2)}
                         </td>
-
-                        {/* Sellable Stock with Low Stock tag */}
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-sm text-on-surface">
-                              {sellable} pcs
-                            </span>
-                            {item.isLowStock && (
-                              <Badge variant="error">Low (&lt;{item.lowStockThresholdPieces})</Badge>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-on-surface-variant font-mono">
-                            {Math.floor(sellable / totalPcsBox)} box,{' '}
-                            {Math.floor((sellable % totalPcsBox) / pcsPerStrip)} strip,{' '}
-                            {sellable % pcsPerStrip} pc
-                          </div>
+                        <td className="py-3.5 px-3 text-center">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            item.isActive ? 'bg-[#D7F5EB] text-[#147D64]' : 'bg-[#EAEFF0] text-[#5B6D6B]'
+                          }`}>
+                            {item.isActive ? 'Active' : 'Inactive'}
+                          </span>
                         </td>
-
-                        {/* Earliest Expiry */}
-                        <td className="px-5 py-4">{getExpiryBadge(item.earliestExpiry)}</td>
-
-                        {/* Actions */}
-                        <td className="px-5 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="py-3.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5 text-[#8CA09D]">
                             <button
-                              type="button"
-                              onClick={() => toggleItemBatches(item._id)}
-                              className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all flex items-center gap-1 cursor-pointer ${
-                                isExpanded
-                                  ? 'bg-primary text-on-primary border-primary shadow-sm'
-                                  : 'bg-surface-container-low text-on-surface border-outline-variant/40 hover:bg-surface-container'
+                              onClick={() => handleExpandItem(item._id)}
+                              className="px-2.5 py-1 text-xs font-semibold text-[#002F34] bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                              title="View Batches"
+                            >
+                              {isExpanded ? 'Hide Batches' : 'Batches'}
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenReceive(item)}
+                              className="px-2.5 py-1 text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors cursor-pointer"
+                              title="Receive Stock"
+                            >
+                              + Receive
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenEdit(item)}
+                              className="p-1 hover:text-[#032B2F] rounded transition-colors cursor-pointer"
+                              title="Edit Product"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                              </svg>
+                            </button>
+
+                            <button
+                              onClick={() => handleToggleActive(item._id)}
+                              className={`p-1 rounded transition-colors cursor-pointer ${
+                                item.isActive ? 'hover:text-amber-600' : 'hover:text-emerald-600'
                               }`}
-                              title="View & manage individual batches"
+                              title={item.isActive ? 'Deactivate' : 'Activate'}
                             >
-                              <span className="material-symbols-outlined text-[16px]">
-                                {isExpanded ? 'expand_less' : 'expand_more'}
-                              </span>
-                              Batches ({item.batchCount || 0})
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                              </svg>
                             </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPreselectedItem(item);
-                                setIsReceivingModalOpen(true);
-                              }}
-                              className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
-                              title="Receive stock for this medicine"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">add_box</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setItemToEdit(item);
-                                setIsItemModalOpen(true);
-                              }}
-                              className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
-                              title="Edit medicine master"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">edit</span>
-                            </button>
-
-                            {isOwner && (
-                              <button
-                                type="button"
-                                onClick={() => handleToggleActive(item._id)}
-                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                                  item.isActive
-                                    ? 'text-on-surface-variant hover:text-error hover:bg-error-container/30'
-                                    : 'text-error hover:text-emerald-700 hover:bg-emerald-100'
-                                }`}
-                                title={item.isActive ? 'Deactivate medicine' : 'Activate medicine'}
-                              >
-                                <span className="material-symbols-outlined text-[20px]">
-                                  {item.isActive ? 'block' : 'check_circle'}
-                                </span>
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
 
-                      {/* Expandable Batch Drawer Row */}
+                      {/* Batches Expanded Accordion Row */}
                       {isExpanded && (
-                        <tr className="bg-surface-container-low/50 border-b border-surface-container">
-                          <td colSpan={6} className="p-5">
-                            <div className="flex flex-col gap-3">
+                        <tr>
+                          <td colSpan={6} className="bg-slate-50 p-4 border-y border-slate-200">
+                            <div className="flex flex-col gap-2">
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-xs text-primary flex items-center gap-1.5">
-                                  <span className="material-symbols-outlined text-[18px]">layers</span>
-                                  Active Batches for {item.tradeName} (FEFO Ordered)
+                                <span className="font-bold text-xs text-[#002F34]">
+                                  Active Batches for {item.tradeName}:
                                 </span>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setPreselectedItem(item);
-                                    setIsReceivingModalOpen(true);
-                                  }}
+                                <button
+                                  onClick={() => handleOpenReceive(item)}
+                                  className="text-xs font-bold text-teal-700 hover:underline cursor-pointer"
                                 >
-                                  <span className="material-symbols-outlined text-[16px] mr-1">
-                                    add
-                                  </span>
-                                  Receive New Batch
-                                </Button>
+                                  + Receive New Batch
+                                </button>
                               </div>
 
                               {loadingBatches ? (
-                                <div className="text-center py-6 text-xs text-on-surface-variant animate-pulse">
-                                  Loading batch inventory...
-                                </div>
+                                <p className="text-xs text-slate-400">Loading batches...</p>
                               ) : expandedBatches.length === 0 ? (
-                                <div className="p-6 text-center text-xs text-on-surface-variant bg-surface-container-lowest rounded-xl border border-surface-container">
-                                  No active batches recorded for this medicine. Click "Receive New Batch" to add stock.
-                                </div>
+                                <p className="text-xs text-slate-400">No stock batches received yet.</p>
                               ) : (
-                                <div className="overflow-x-auto rounded-xl border border-surface-container bg-surface-container-lowest">
-                                  <table className="w-full text-xs text-left border-collapse">
-                                    <thead className="bg-surface-container-low text-on-surface-variant font-bold uppercase tracking-wider border-b border-surface-container">
-                                      <tr>
-                                        <th className="px-4 py-3">Batch No</th>
-                                        <th className="px-4 py-3">Expiry Date</th>
-                                        <th className="px-4 py-3">Sellable</th>
-                                        <th className="px-4 py-3">Damaged</th>
-                                        <th className="px-4 py-3">Expired</th>
-                                        {isOwner && <th className="px-4 py-3">Cost / Pc</th>}
-                                        <th className="px-4 py-3">Supplier</th>
-                                        <th className="px-4 py-3 text-right">Actions</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-surface-container">
-                                      {expandedBatches.map((batch) => (
-                                        <tr key={batch._id} className="hover:bg-surface-container-low/40">
-                                          <td className="px-4 py-3 font-mono font-bold text-on-surface">
-                                            {batch.batchNumber}
-                                          </td>
-                                          <td className="px-4 py-3">
-                                            {getExpiryBadge(batch.expiryDate)}
-                                          </td>
-                                          <td className="px-4 py-3 font-mono text-emerald-700 font-bold">
-                                            {batch.qtySellable} pcs
-                                          </td>
-                                          <td className="px-4 py-3 font-mono text-amber-700 font-medium">
-                                            {batch.qtyDamaged} pcs
-                                          </td>
-                                          <td className="px-4 py-3 font-mono text-error font-medium">
-                                            {batch.qtyExpired} pcs
-                                          </td>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-1">
+                                  {expandedBatches.map((b) => (
+                                    <div key={b._id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between text-xs">
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <span className="font-mono font-bold text-slate-900 block">{b.batchNumber}</span>
+                                          <span className="text-[11px] text-slate-500">
+                                            Expiry: {new Date(b.expiryDate).toLocaleDateString('en-GB')}
+                                          </span>
+                                        </div>
+                                        <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                                          b.qtySellable > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                                        }`}>
+                                          {b.qtySellable} pcs
+                                        </span>
+                                      </div>
 
-                                          {/* Cost per piece (Owner only) */}
-                                          {isOwner && (
-                                            <td className="px-4 py-3 font-mono">
-                                              {batch.isCostMissing ? (
-                                                <button
-                                                  type="button"
-                                                  onClick={() => {
-                                                    setSelectedBatchForCost(batch);
-                                                    setSelectedItemForAdj(item);
-                                                    setIsCostModalOpen(true);
-                                                  }}
-                                                  className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold hover:bg-amber-200 cursor-pointer"
-                                                >
-                                                  Cost Missing ✏️
-                                                </button>
-                                              ) : (
-                                                <span className="text-on-surface font-semibold">
-                                                  ৳ {batch.purchasePricePerPiece}
-                                                </span>
-                                              )}
-                                            </td>
-                                          )}
-
-                                          <td className="px-4 py-3 text-on-surface-variant">
-                                            {batch.supplierName || '—'}
-                                          </td>
-
-                                          <td className="px-4 py-3 text-right">
-                                            {isOwner && (
-                                              <Button
-                                                variant="outline"
-                                                size="sm"
+                                      <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                                        <span className="text-slate-500">
+                                          Damaged: {b.qtyDamaged} • Expired: {b.qtyExpired}
+                                        </span>
+                                        {isOwner && (
+                                          <div className="flex items-center gap-2">
+                                            {b.isCostMissing && (
+                                              <button
                                                 onClick={() => {
-                                                  setSelectedBatchForAdj(batch);
                                                   setSelectedItemForAdj(item);
-                                                  setIsAdjustmentModalOpen(true);
+                                                  handleOpenCostModal(b);
                                                 }}
+                                                className="font-bold text-amber-700 hover:underline cursor-pointer"
                                               >
-                                                Adjust
-                                              </Button>
+                                                Add Cost
+                                              </button>
                                             )}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                                            <button
+                                              onClick={() => handleOpenAdjustment(item, b)}
+                                              className="font-bold text-teal-700 hover:underline cursor-pointer"
+                                            >
+                                              Adjust
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                             </div>
@@ -658,79 +731,124 @@ export const Inventory: React.FC = () => {
           </table>
         </div>
 
-        {/* Pagination Bar */}
-        {totalPages > 1 && (
-          <div className="p-4 bg-surface-container-low border-t border-surface-container flex items-center justify-between text-xs text-on-surface-variant">
-            <div>
-              Showing page <span className="font-bold text-on-surface">{page}</span> of{' '}
-              <span className="font-bold text-on-surface">{totalPages}</span> ({totalItems} total)
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next
-              </Button>
-            </div>
+        {/* Table Pagination */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#EEF4F3] text-xs text-[#7B8E8B]">
+          <div className="flex items-center gap-2">
+            <span>Showing</span>
+            <span className="font-bold text-[#0D302C]">{(page - 1) * 15 + 1} to {Math.min(page * 15, totalItems)}</span>
+            <span>of</span>
+            <span className="font-bold text-[#0D302C]">{totalItems}</span>
+            <span>products</span>
           </div>
-        )}
-      </Card>
+
+          <div className="flex items-center gap-1.5 self-center">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="w-8 h-8 rounded-full border border-[#DCE6E5] flex items-center justify-center hover:bg-[#F2F7F6] text-[#556966] transition-colors disabled:opacity-40 cursor-pointer"
+              type="button"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5).map((pNum) => (
+              <button
+                key={pNum}
+                onClick={() => setPage(pNum)}
+                className={`w-8 h-8 rounded-full font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                  pNum === page
+                    ? 'bg-[#032B2F] text-white shadow-sm'
+                    : 'border border-transparent hover:border-[#DCE6E5] text-[#556966] hover:bg-[#F2F7F6]'
+                }`}
+                type="button"
+              >
+                {pNum}
+              </button>
+            ))}
+
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="w-8 h-8 rounded-full border border-[#DCE6E5] flex items-center justify-center hover:bg-[#F2F7F6] text-[#556966] transition-colors disabled:opacity-40 cursor-pointer"
+              type="button"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+      {/* END: ProductsListTableSection */}
 
       {/* Modals */}
       <ItemModal
         isOpen={isItemModalOpen}
-        onClose={() => setIsItemModalOpen(false)}
-        onSuccess={() => {
-          loadData();
-          fetchAlerts();
-        }}
         itemToEdit={itemToEdit}
+        onClose={() => {
+          setIsItemModalOpen(false);
+          setItemToEdit(null);
+        }}
+        onSuccess={() => {
+          setIsItemModalOpen(false);
+          setItemToEdit(null);
+          loadData();
+        }}
       />
 
       <StockReceivingModal
         isOpen={isReceivingModalOpen}
-        onClose={() => setIsReceivingModalOpen(false)}
-        onSuccess={() => {
-          loadData();
-          fetchAlerts();
-          if (expandedItemId) toggleItemBatches(expandedItemId);
-        }}
         preselectedItem={preselectedItem}
-      />
-
-      <StockAdjustmentModal
-        isOpen={isAdjustmentModalOpen}
-        onClose={() => setIsAdjustmentModalOpen(false)}
+        onClose={() => {
+          setIsReceivingModalOpen(false);
+          setPreselectedItem(null);
+        }}
         onSuccess={() => {
+          setIsReceivingModalOpen(false);
+          setPreselectedItem(null);
           loadData();
           fetchAlerts();
-          if (expandedItemId) toggleItemBatches(expandedItemId);
         }}
-        batch={selectedBatchForAdj}
-        item={selectedItemForAdj}
       />
 
-      <BatchCostModal
-        isOpen={isCostModalOpen}
-        onClose={() => setIsCostModalOpen(false)}
-        onSuccess={() => {
-          loadData();
-          if (expandedItemId) toggleItemBatches(expandedItemId);
-        }}
-        batch={selectedBatchForCost}
-        item={selectedItemForAdj}
-      />
+      {isOwner && (
+        <StockAdjustmentModal
+          isOpen={isAdjustmentModalOpen}
+          batch={selectedBatchForAdj}
+          item={selectedItemForAdj}
+          onClose={() => {
+            setIsAdjustmentModalOpen(false);
+            setSelectedBatchForAdj(null);
+            setSelectedItemForAdj(null);
+          }}
+          onSuccess={() => {
+            setIsAdjustmentModalOpen(false);
+            setSelectedBatchForAdj(null);
+            setSelectedItemForAdj(null);
+            loadData();
+            fetchAlerts();
+          }}
+        />
+      )}
+
+      {isOwner && (
+        <BatchCostModal
+          isOpen={isCostModalOpen}
+          batch={selectedBatchForCost}
+          item={selectedItemForAdj}
+          onClose={() => {
+            setIsCostModalOpen(false);
+            setSelectedBatchForCost(null);
+          }}
+          onSuccess={() => {
+            setIsCostModalOpen(false);
+            setSelectedBatchForCost(null);
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 };

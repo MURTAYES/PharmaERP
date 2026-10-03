@@ -6,7 +6,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
-  icon?: string; // Material symbols icon name
+  icon?: string;
 }
 
 export function Button({
@@ -20,25 +20,25 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none cursor-pointer';
+    'inline-flex items-center justify-center font-bold rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer active:scale-[0.98] select-none';
 
   const variants = {
     primary:
-      'bg-primary text-on-primary hover:bg-primary-container shadow-sm focus:ring-primary',
+      'bg-primary hover:bg-primary-600 text-on-primary shadow-pill hover:shadow-float focus:ring-primary',
     secondary:
-      'bg-secondary-fixed text-on-secondary-fixed hover:bg-secondary-fixed-dim focus:ring-secondary',
+      'bg-primary-50 text-primary-800 hover:bg-primary-100 border border-primary-200 focus:ring-primary',
     outline:
-      'border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-low focus:ring-primary shadow-sm',
+      'border border-slate-200 bg-white text-slate-800 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-700 shadow-sm focus:ring-primary',
     danger:
-      'bg-error text-on-error hover:bg-red-700 focus:ring-error shadow-sm',
+      'bg-error hover:bg-red-600 text-white shadow-sm hover:shadow-md focus:ring-error',
     ghost:
-      'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low focus:ring-primary',
+      'text-slate-600 hover:text-primary-700 hover:bg-primary-50 focus:ring-primary',
   };
 
   const sizes = {
-    sm: 'h-8 px-3 text-xs gap-1.5',
-    md: 'h-10 px-4 text-sm gap-2',
-    lg: 'h-12 px-6 text-base gap-2.5',
+    sm: 'h-8 px-3.5 text-xs gap-1.5 rounded-xl',
+    md: 'h-10 px-5 text-xs tracking-wide gap-2 rounded-2xl',
+    lg: 'h-12 px-7 text-sm tracking-wide gap-2.5 rounded-2xl font-extrabold',
   };
 
   return (

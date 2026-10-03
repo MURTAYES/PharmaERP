@@ -108,7 +108,6 @@ export const POS: React.FC = () => {
   const handleSelectItem = async (item: Item) => {
     setError(null);
     try {
-      // Query batches with FEFO status
       const res = await getBatchesForItem(item._id);
       const batches = res.batches;
 
@@ -121,8 +120,6 @@ export const POS: React.FC = () => {
       const fefoBatch = batches[0];
       const pcsPerStrip = item.unitHierarchy?.piecesPerStrip || 1;
       const stripsPerBox = item.unitHierarchy?.stripsPerBox || 1;
-
-      // Default catalog price per piece
       const mrpPerPiece = item.mrpPerPiece.toString();
 
       // Check if already in cart with same batch
@@ -131,7 +128,6 @@ export const POS: React.FC = () => {
       );
 
       if (existingIdx >= 0) {
-        // Increment quantity of existing line
         const updated = [...lines];
         const currentLine = updated[existingIdx];
         const newQty = currentLine.quantity + 1;
@@ -148,7 +144,6 @@ export const POS: React.FC = () => {
         };
         setLines(updated);
       } else {
-        // Add new line
         const newLine: CartLineItem = {
           id: Math.random().toString(36).substring(2, 9),
           itemId: item._id,
@@ -219,7 +214,6 @@ export const POS: React.FC = () => {
         if (unit === 'strip') qtyPieces = l.quantity * pcsPerStrip;
         if (unit === 'box') qtyPieces = l.quantity * totalPcsBox;
 
-        // If price wasn't overridden, update unitPrice to matching unit price
         const newUnitPrice = l.isPriceOverridden ? l.unitPrice : newCatalogPrice;
         const lineTotal = new Decimal(newUnitPrice).times(l.quantity).toFixed(2);
 
@@ -381,7 +375,6 @@ export const POS: React.FC = () => {
     setCustomerPhone(heldBill.customerPhone || '');
     setDiscountPercent(heldBill.discountPercent || '0.00');
 
-    // Convert held lines to active cart lines
     const resumedLines: CartLineItem[] = [];
     for (const hl of heldBill.lines) {
       try {
@@ -482,7 +475,7 @@ export const POS: React.FC = () => {
     <div className="space-y-4 text-left">
       {/* Offline Warning Banner */}
       {!isOnline && (
-        <div className="p-3 bg-red-600 text-white font-bold text-xs rounded-2xl flex items-center gap-2 shadow-lg animate-pulse">
+        <div className="p-3.5 bg-red-600 text-white font-bold text-xs rounded-2xl flex items-center gap-2 shadow-lg animate-pulse">
           <span className="material-symbols-outlined text-[20px]">wifi_off</span>
           <span>Internet Connection Lost. POS checkout is locked to prevent corrupted inventory snapshots.</span>
         </div>
@@ -490,50 +483,50 @@ export const POS: React.FC = () => {
 
       {/* Error & Success Toasts */}
       {error && (
-        <div className="p-3 bg-error-container text-on-error-container text-xs font-semibold rounded-2xl flex items-center justify-between shadow-sm">
+        <div className="p-3.5 bg-red-50 border border-red-200 text-red-900 text-xs font-bold rounded-2xl flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">error</span>
+            <span className="material-symbols-outlined text-[18px] text-red-600">error</span>
             <span>{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="cursor-pointer">
+          <button onClick={() => setError(null)} className="cursor-pointer text-red-600 hover:text-red-900">
             <span className="material-symbols-outlined text-[16px]">close</span>
           </button>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-3 bg-emerald-100 text-emerald-900 text-xs font-semibold rounded-2xl flex items-center gap-2 shadow-sm">
-          <span className="material-symbols-outlined text-[18px] text-emerald-700">check_circle</span>
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-2 shadow-sm">
+          <span className="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Top POS Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-surface-container-low border border-surface-container rounded-3xl">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-2xl bg-primary text-on-primary flex items-center justify-center font-bold">
-            <span className="material-symbols-outlined text-[22px]">point_of_sale</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white border border-teal-100 rounded-3xl shadow-card">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-pill">
+            <span className="material-symbols-outlined text-[24px]">point_of_sale</span>
           </div>
           <div>
-            <h1 className="text-base font-extrabold text-on-surface">Counter POS Billing</h1>
-            <p className="text-[11px] text-on-surface-variant">High-speed keyboard & touch billing terminal</p>
+            <h1 className="text-base font-extrabold text-slate-900">Point of Sale Counter</h1>
+            <p className="text-[11px] font-medium text-slate-500">High-speed keyboard & touch billing terminal</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant="outline"
+            variant="secondary"
             onClick={() => {
               loadHeldBills();
               setShowHeldDrawer(true);
             }}
-            className="gap-1.5 font-bold"
+            className="gap-2 font-bold"
           >
             <span className="material-symbols-outlined text-[18px]">pause_circle</span>
             Held Bills (F9)
             {heldBills.length > 0 && (
-              <span className="bg-primary text-on-primary text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+              <span className="bg-primary text-white text-[10px] px-2 py-0.5 rounded-full font-mono font-black">
                 {heldBills.length}
               </span>
             )}
@@ -544,36 +537,36 @@ export const POS: React.FC = () => {
             variant="outline"
             onClick={() => setShowHoldModal(true)}
             disabled={lines.length === 0}
-            className="gap-1.5 font-bold"
+            className="gap-2 font-bold"
           >
             <span className="material-symbols-outlined text-[18px]">save</span>
-            Hold Bill (F8)
+            Hold Cart (F8)
           </Button>
         </div>
       </div>
 
       {/* Main POS Interface (2 Columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left Column (Items & Cart - 8 Cols) */}
-        <div className="lg:col-span-8 space-y-3 flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left Column (Search, Customer Bar & Cart - 8 Cols) */}
+        <div className="lg:col-span-8 space-y-4 flex flex-col">
           {/* Medicine Search Bar with F2 Autofocus */}
           <POSItemSearch onSelectItem={handleSelectItem} inputRef={searchInputRef} />
 
           {/* Customer Quick Info Bar */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-surface-container-lowest border border-surface-container rounded-2xl">
+          <div className="grid grid-cols-2 gap-3 p-3 bg-white border border-teal-100 rounded-3xl shadow-card">
             <input
               type="text"
               placeholder="Customer Name (Optional)"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              className="h-9 px-3 bg-surface-container-low border border-transparent rounded-xl text-xs text-on-surface placeholder:text-on-surface-variant/60 focus:bg-surface-container-lowest focus:border-primary focus:outline-none"
+              className="h-10 px-4 bg-teal-50/40 border border-teal-100/80 rounded-2xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
             />
             <input
               type="text"
               placeholder="Customer Phone (Optional)"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
-              className="h-9 px-3 bg-surface-container-low border border-transparent rounded-xl text-xs text-on-surface placeholder:text-on-surface-variant/60 focus:bg-surface-container-lowest focus:border-primary focus:outline-none font-mono"
+              className="h-10 px-4 bg-teal-50/40 border border-teal-100/80 rounded-2xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all font-mono"
             />
           </div>
 
@@ -590,32 +583,30 @@ export const POS: React.FC = () => {
         </div>
 
         {/* Right Column (Summary & Checkout - 4 Cols) */}
-        <div className="lg:col-span-4 space-y-3">
-          <div className="p-5 bg-surface-container-lowest border border-surface-container rounded-3xl shadow-sm space-y-4 sticky top-4">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-on-surface border-b border-surface-container pb-2">
-              Payment Summary
-            </h2>
+        <div className="lg:col-span-4 space-y-4">
+          <div className="p-6 bg-white border border-teal-100 rounded-4xl shadow-card space-y-5 sticky top-22">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                Payment Summary
+              </h2>
+              <span className="text-[11px] font-mono font-bold text-primary bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-full">
+                {lines.length} Items • {calculations.totalPieces} Pcs
+              </span>
+            </div>
 
             {/* Live Amounts Breakdown */}
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between text-on-surface-variant">
-                <span>Total Items / Pieces:</span>
-                <span className="font-mono font-bold text-on-surface">
-                  {lines.length} items ({calculations.totalPieces} pcs)
-                </span>
-              </div>
-
-              <div className="flex justify-between text-on-surface-variant">
-                <span>Subtotal:</span>
-                <span className="font-mono font-bold text-on-surface">
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between text-slate-600 font-medium">
+                <span>Subtotal Amount:</span>
+                <span className="font-mono font-bold text-slate-900 text-sm">
                   ৳ {calculations.subtotal}
                 </span>
               </div>
 
               {/* Discount Input */}
-              <div className="flex items-center justify-between pt-1 border-t border-surface-container/60">
-                <span className="text-on-surface-variant font-semibold">Discount (%):</span>
-                <div className="flex items-center gap-1">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-slate-600 font-semibold">Special Discount (%):</span>
+                <div className="flex items-center gap-1.5">
                   <input
                     type="number"
                     step="1"
@@ -623,14 +614,14 @@ export const POS: React.FC = () => {
                     max="100"
                     value={discountPercent}
                     onChange={(e) => setDiscountPercent(e.target.value)}
-                    className="w-16 h-7 text-right px-2 bg-surface-container-low border border-outline-variant/30 rounded-lg text-xs font-mono font-bold focus:border-primary focus:outline-none"
+                    className="w-16 h-8 text-right px-2.5 bg-teal-50/50 border border-teal-200 rounded-xl text-xs font-mono font-black text-slate-900 focus:bg-white focus:border-primary focus:outline-none"
                   />
-                  <span className="text-on-surface-variant font-bold">%</span>
+                  <span className="text-slate-500 font-bold">%</span>
                 </div>
               </div>
 
               {parseFloat(calculations.discountAmount) > 0 && (
-                <div className="flex justify-between text-emerald-700 font-medium">
+                <div className="flex justify-between text-emerald-800 font-semibold">
                   <span>Discount Amount:</span>
                   <span className="font-mono font-bold">- ৳ {calculations.discountAmount}</span>
                 </div>
@@ -638,19 +629,19 @@ export const POS: React.FC = () => {
 
               {/* Charges / VAT Breakdown */}
               {calculations.charges.map((ch, i) => (
-                <div key={i} className="flex justify-between text-on-surface-variant">
+                <div key={i} className="flex justify-between text-slate-600 font-medium">
                   <span>{ch.name}:</span>
-                  <span className="font-mono font-bold text-on-surface">+ ৳ {ch.amount}</span>
+                  <span className="font-mono font-bold text-slate-900">+ ৳ {ch.amount}</span>
                 </div>
               ))}
             </div>
 
             {/* Grand Total Display */}
-            <div className="p-4 bg-primary-container/20 border-2 border-primary/30 rounded-2xl text-center space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-primary block">
+            <div className="p-5 bg-gradient-to-br from-teal-50 via-teal-50/70 to-emerald-50 border-2 border-teal-200/80 rounded-3xl text-center space-y-1 shadow-inner">
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-primary-800 block">
                 Grand Total Payable
               </span>
-              <span className="text-3xl font-black font-mono text-primary block">
+              <span className="text-3xl sm:text-4xl font-black font-mono text-slate-900 block tracking-tight">
                 ৳ {calculations.grandTotal}
               </span>
             </div>
@@ -661,32 +652,32 @@ export const POS: React.FC = () => {
               size="lg"
               onClick={() => setShowPaymentModal(true)}
               disabled={lines.length === 0 || !isOnline}
-              className="w-full py-4 text-base font-extrabold shadow-md gap-2"
+              className="w-full py-4 text-sm font-black shadow-pill hover:shadow-float gap-2 select-none"
             >
               <span className="material-symbols-outlined text-[22px]">payments</span>
               Pay & Checkout (F4)
             </Button>
 
             {/* Keyboard Shortcuts Helper */}
-            <div className="p-3 bg-surface-container-low rounded-2xl border border-surface-container text-[11px] text-on-surface-variant space-y-1">
-              <span className="font-bold text-on-surface block uppercase tracking-wider text-[10px]">
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-[11px] text-slate-600 space-y-1.5">
+              <span className="font-bold text-slate-800 block uppercase tracking-wider text-[10px]">
                 Keyboard Shortcuts:
               </span>
               <div className="flex justify-between">
                 <span>Focus Search:</span>
-                <kbd className="font-mono font-bold text-primary">F2</kbd>
+                <kbd className="font-mono font-bold text-primary bg-white px-2 py-0.5 rounded border border-slate-200">F2</kbd>
               </div>
               <div className="flex justify-between">
                 <span>Proceed to Pay:</span>
-                <kbd className="font-mono font-bold text-primary">F4</kbd>
+                <kbd className="font-mono font-bold text-primary bg-white px-2 py-0.5 rounded border border-slate-200">F4</kbd>
               </div>
               <div className="flex justify-between">
                 <span>Hold Current Bill:</span>
-                <kbd className="font-mono font-bold text-primary">F8</kbd>
+                <kbd className="font-mono font-bold text-primary bg-white px-2 py-0.5 rounded border border-slate-200">F8</kbd>
               </div>
               <div className="flex justify-between">
                 <span>View Held Bills:</span>
-                <kbd className="font-mono font-bold text-primary">F9</kbd>
+                <kbd className="font-mono font-bold text-primary bg-white px-2 py-0.5 rounded border border-slate-200">F9</kbd>
               </div>
             </div>
           </div>

@@ -13,9 +13,9 @@ PharmaERP is delivered in vertical end-to-end MVP slices. Each phase delivers a 
 - [x] **Phase 1: Core Foundation & Auth (End-to-End)** - Working app shell, MongoDB Atlas connection, JWT authentication, RBAC with field-stripping serializer, user management UI, pharmacy settings UI, and audit logging.
 - [x] **Phase 2: Inventory & Stock Management (End-to-End)** - Medicine catalog, unit conversion hierarchies, MRP, type-ahead search, batch stock receiving UI with duplicate merging, stock buckets, manual adjustments, and live expiry/low-stock alerts.
 - [x] **Phase 3: Point of Sale & Billing (End-to-End)** - Counter billing interface, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume bills, discounts, charges, atomic checkout with $gte guard, sequential invoices, and thermal receipt printing.
-- [ ] **Phase 4: Returns & Credit Notes (End-to-End)** - Invoice lookup for sales returns, stock bucket destination routing, proportional refund calculations, sequential credit notes, and supplier return invoices.
-- [ ] **Phase 5: Analytics & Reporting Suite (End-to-End)** - Real-time owner dashboard, sales reports, profit/loss analysis, price override audit, non-FEFO report, stock valuation, movement ledger, and CSV export.
-- [ ] **Phase 6: Hardening, Integration & Deployment** - End-to-end workflow verification, field-leak security audits, concurrency race testing, backup scripts, and production deployment configuration.
+- [x] **Phase 4: Returns & Credit Notes (End-to-End)** - Invoice lookup for sales returns, stock bucket destination routing, proportional refund calculations, sequential credit notes, and supplier return invoices.
+- [x] **Phase 5: Analytics & Reporting Suite (End-to-End)** - Real-time owner dashboard, sales reports, profit/loss analysis, price override audit, non-FEFO report, stock valuation, movement ledger, and CSV export.
+- [x] **Phase 6: Hardening, Integration & Deployment** - End-to-end workflow verification, field-leak security audits, concurrency race testing, backup scripts, and production deployment configuration.
 
 ## Phase Details
 
@@ -87,12 +87,12 @@ Plans:
   3. Refunds accurately compute proportional discounts and percentage charges while retaining fixed fees.
   4. System generates sequential credit notes (CN-000001) and updates stock buckets atomically.
   5. Owner can issue supplier return invoices (SRT-000001) to deduct damaged/expired inventory.
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Sales return data models, credit note numbering, proportional refund math, and atomic return transaction service
-- [ ] 04-02: Supplier return invoice model and bucket deduction engine (owner only)
-- [ ] 04-03: Returns UI: invoice return lookup dialog, bucket selector, credit note view, and supplier return creator
+- [x] 04-01: Sales return data models, credit note numbering, proportional refund math, and atomic return transaction service
+- [x] 04-02: Supplier return invoice model, owner bucket deduction engine, and API routes
+- [x] 04-03: Returns UI: invoice return lookup dialog, bucket selector, credit note thermal receipt printer, and supplier return creator
 
 ### Phase 5: Analytics & Reporting Suite (End-to-End)
 **Goal**: Deliver an executive analytics dashboard for the owner and a comprehensive reporting suite with date filtering and universal CSV export.
@@ -105,13 +105,13 @@ Plans:
   3. Profit & loss report computes revenue minus cost snapshots, excluding uncosted lines.
   4. Owner can audit price overrides and non-FEFO sales with staff attribution.
   5. Stock valuation, expiry, low stock, returns, and movement ledger reports render accurately and export to CSV.
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 05-01: Timezone-aware aggregation pipelines for dashboard KPIs, sales summaries, and profit/loss calculations
-- [ ] 05-02: Specialized audit reports API (price overrides, non-FEFO transactions, stock valuation, movement ledger)
-- [ ] 05-03: Owner dashboard UI with interactive metrics, charts, and quick-action cards
-- [ ] 05-04: Report center UI with date range pickers, filter controls, data tables, and client-side CSV export
+- [x] 05-01: Timezone-aware aggregation pipelines for dashboard KPIs, sales summaries, and profit/loss calculations
+- [x] 05-02: Specialized audit reports API (price overrides, non-FEFO transactions, stock valuation, movement ledger)
+- [x] 05-03: Owner dashboard UI with interactive metrics, charts, and quick-action cards
+- [x] 05-04: Report center UI with date range pickers, filter controls, data tables, and client-side CSV export
 
 ### Phase 6: Hardening, Integration & Deployment
 **Goal**: Execute comprehensive end-to-end testing, role-leak penetration checks, concurrency race tests, backup/restore routines, and production packaging.
@@ -123,11 +123,11 @@ Plans:
   2. Concurrent billing tests prove stock never goes negative under simultaneous checkout load.
   3. Database backup/restore scripts (`mongodump`/`mongorestore`) are documented and operational.
   4. Production build runs cleanly with all environment variables validated.
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: Role-leak security integration test suite and concurrency stress testing
-- [ ] 06-02: Automated backup scripts, environment configuration validation, and production build verification
+- [x] 06-01: Role-leak security integration test suite and concurrency stress testing
+- [x] 06-02: Automated backup scripts, environment configuration validation, and production build verification
 
 ## Progress
 
@@ -139,6 +139,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Core Foundation & Auth (End-to-End) | 3/3 | Complete | 2026-10-03 |
 | 2. Inventory & Stock Management (End-to-End) | 4/4 | Complete | 2026-10-03 |
 | 3. Point of Sale & Billing (End-to-End) | 5/5 | Complete | 2026-10-03 |
-| 4. Returns & Credit Notes (End-to-End) | 0/3 | Not started | - |
-| 5. Analytics & Reporting Suite (End-to-End) | 0/4 | Not started | - |
-| 6. Hardening, Integration & Deployment | 0/2 | Not started | - |
+| 4. Returns & Credit Notes (End-to-End) | 3/3 | Complete | 2026-10-03 |
+| 5. Analytics & Reporting Suite (End-to-End) | 4/4 | Complete | 2026-10-03 |
+| 6. Hardening, Integration & Deployment | 2/2 | Complete | 2026-10-03 |

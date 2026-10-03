@@ -23,3 +23,6 @@ export function roleGuard(roles: UserRole | UserRole[]) {
     next();
   };
 }
+
+export const requireRole = roleGuard;
+

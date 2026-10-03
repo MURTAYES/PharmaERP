@@ -112,6 +112,32 @@ export interface StockMovement {
   timestamp: string;
 }
 
+export interface SpiderAxis {
+  label: string;
+  fullName: string;
+  count: number;
+  percentage: number;
+  normalized: number;
+  x: number;
+  y: number;
+}
+
+export interface ProductDistribution {
+  totalProducts: number;
+  inStockCount: number;
+  inStockRatio: string;
+  topCategory: string;
+  topCategoryName: string;
+  otherCount: number;
+  axes: SpiderAxis[];
+  polygonPoints: string;
+  cachePeriodDays: number;
+  fromCache?: boolean;
+  calculatedAt?: string;
+  expiresAt?: string;
+  ttlDaysRemaining?: number;
+}
+
 export interface AlertSummary {
   expiredCount: number;
   critical30Count: number;
@@ -222,6 +248,84 @@ export interface HeldBill {
   lines: HeldBillLine[];
   discountPercent: string;
   notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreditNoteLineItem {
+  itemId: string;
+  tradeName: string;
+  genericName: string;
+  batchId: string;
+  batchNumber: string;
+  expiryDate?: string;
+  unit: 'piece' | 'strip' | 'box';
+  unitHierarchySnapshot: {
+    piecesPerStrip: number;
+    stripsPerBox: number;
+  };
+  returnedQuantity: number;
+  returnedQuantityPieces: number;
+  originalUnitPrice: string;
+  originalUnitPricePerPiece: string;
+  returnedLineTotal: string;
+  destinationBucket: 'sellable' | 'damaged' | 'expired';
+}
+
+export interface CreditNoteChargeRefund {
+  name: string;
+  type: 'percentage' | 'fixed';
+  rate: string;
+  refundAmount: string;
+}
+
+export interface CreditNote {
+  _id: string;
+  creditNoteNumber: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  customerName?: string;
+  customerPhone?: string;
+  processedBy: string;
+  processedByName: string;
+  lines: CreditNoteLineItem[];
+  subtotalRefund: string;
+  discountRefund: string;
+  chargesRefund: CreditNoteChargeRefund[];
+  totalChargesRefund: string;
+  grandTotalRefund: string;
+  refundMethod: 'cash' | 'original_payment';
+  reasonCategory: string;
+  reasonDetail: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupplierReturnLineItem {
+  itemId: string;
+  tradeName: string;
+  genericName: string;
+  batchId: string;
+  batchNumber: string;
+  expiryDate?: string;
+  fromBucket: 'damaged' | 'expired';
+  quantityPieces: number;
+  purchaseCostPerPiece?: string;
+  totalCost?: string;
+}
+
+export interface SupplierReturn {
+  _id: string;
+  supplierReturnNumber: string;
+  supplierName: string;
+  supplierInvoiceRef?: string;
+  processedBy: string;
+  processedByName: string;
+  lines: SupplierReturnLineItem[];
+  totalQuantityPieces: number;
+  totalEstimatedCredit?: string;
+  reasonCategory: string;
+  reasonDetail: string;
   createdAt: string;
   updatedAt: string;
 }
