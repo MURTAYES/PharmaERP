@@ -220,12 +220,21 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
 
         {/* Quantity */}
         <Input
-          label="Quantity (Pieces)"
+          label="Quantity (Pieces - Whole Number)"
           type="number"
+          step="1"
           min="1"
           max={availableInSource}
           value={quantityPieces}
-          onChange={(e) => setQuantityPieces(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
+              e.preventDefault();
+            }
+          }}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9]/g, '');
+            setQuantityPieces(val);
+          }}
           helperText={`Maximum adjustable pieces: ${availableInSource}`}
           required
         />

@@ -14,7 +14,7 @@ export const receiveBatchSchema = z.object({
   batchNumber: z.string().min(1, 'Batch number is required').trim().toUpperCase(),
   expiryDate: z.string().min(1, 'Expiry date is required'),
   unit: z.enum(['piece', 'strip', 'box']).default('piece'),
-  quantity: z.number().positive('Quantity must be greater than 0'),
+  quantity: z.number().int('Quantity must be a whole number (no fractions)').positive('Quantity must be greater than 0'),
   purchasePrice: z.union([z.string(), z.number()]).optional(),
   supplierName: z.string().trim().optional(),
 });

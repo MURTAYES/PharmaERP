@@ -30,7 +30,13 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
   const [searching, setSearching] = useState(false);
 
   const [batchNumber, setBatchNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState(() => {
+    // Default to next year same month for convenience
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 2);
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${d.getFullYear()}-${month}`;
+  });
   const [unit, setUnit] = useState<'piece' | 'strip' | 'box'>('box');
   const [quantity, setQuantity] = useState('1');
   const [purchasePrice, setPurchasePrice] = useState('');
@@ -48,7 +54,10 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
       setSearchQuery('');
     }
     setBatchNumber('');
-    setExpiryDate('');
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 2);
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    setExpiryDate(`${d.getFullYear()}-${month}`);
     setUnit('box');
     setQuantity('1');
     setPurchasePrice('');
@@ -79,7 +88,7 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery, selectedItem]);
 
-  // Calculate total converted pieces
+  // Calculate total converted pieces (Strict whole integers only)
   let totalCalculatedPieces = 0;
   let estimatedCostPerPiece = '';
 
@@ -87,13 +96,13 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
     const pcsPerStrip = selectedItem.unitHierarchy?.piecesPerStrip || 1;
     const stripsPerBox = selectedItem.unitHierarchy?.stripsPerBox || 1;
     const totalPcsBox = pcsPerStrip * stripsPerBox;
-    const qtyNum = parseFloat(quantity) || 0;
+    const qtyInt = parseInt(quantity, 10) || 0;
 
-    if (unit === 'piece') totalCalculatedPieces = qtyNum;
-    else if (unit === 'strip') totalCalculatedPieces = qtyNum * pcsPerStrip;
-    else if (unit === 'box') totalCalculatedPieces = qtyNum * totalPcsBox;
+    if (unit === 'piece') totalCalculatedPieces = qtyInt;
+    else if (unit === 'strip') totalCalculatedPieces = qtyInt * pcsPerStrip;
+    else if (unit === 'box') totalCalculatedPieces = qtyInt * totalPcsBox;
 
-    if (isOwner && purchasePrice && qtyNum > 0) {
+    if (isOwner && purchasePrice && qtyInt > 0) {
       try {
         const priceDec = new Decimal(purchasePrice);
         let costPerPiece = priceDec;
@@ -111,6 +120,17 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
       return;
     }
 
+    const qtyInt = parseInt(quantity, 10);
+    if (!qtyInt || qtyInt <= 0) {
+      setError('Quantity must be a positive whole number (e.g. 1, 2, 5)');
+      return;
+    }
+
+    if (!expiryDate) {
+      setError('Please select an expiry date');
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
@@ -120,7 +140,7 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
         batchNumber: batchNumber.trim().toUpperCase(),
         expiryDate: expiryDate.trim(),
         unit,
-        quantity: parseFloat(quantity),
+        quantity: qtyInt,
         purchasePrice: isOwner && purchasePrice ? purchasePrice : undefined,
         supplierName: supplierName.trim(),
       });
@@ -246,14 +266,21 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
             required
           />
 
-          <Input
-            label="Expiry Date"
-            placeholder="MM/YYYY or DD/MM/YYYY (e.g. 11/2027)"
-            value={expiryDate}
-            onChange={(e) => setExpiryDate(e.target.value)}
-            helperText="Typing 11/2027 auto-resolves to end of November 2027"
-            required
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+              Expiry Month & Year <span className="text-primary font-bold">*</span>
+            </label>
+            <input
+              type="month"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className="w-full h-11 px-4 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono cursor-pointer"
+              required
+            />
+            <span className="text-[11px] text-on-surface-variant">
+              Select expiry month/year (auto-resolves to last calendar day of the month)
+            </span>
+          </div>
         </div>
 
         {/* Receiving Unit & Quantity */}
@@ -293,12 +320,20 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
             </div>
 
             <Input
-              label={`Quantity in ${unit}s`}
+              label={`Quantity in ${unit}s (Whole Number)`}
               type="number"
-              step="any"
-              min="0.1"
+              step="1"
+              min="1"
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
+                  e.preventDefault();
+                }
+              }}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                setQuantity(val);
+              }}
               required
             />
           </div>

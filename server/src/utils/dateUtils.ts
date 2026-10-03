@@ -16,6 +16,18 @@ export function parseExpiryDate(input: string | Date): Date {
 
   const trimmed = input.trim();
 
+  // Pattern: YYYY-MM (e.g. '2027-11' from HTML5 month picker)
+  const yyyymmMatch = trimmed.match(/^(\d{4})-(\d{1,2})$/);
+  if (yyyymmMatch) {
+    const year = parseInt(yyyymmMatch[1], 10);
+    const month = parseInt(yyyymmMatch[2], 10);
+    if (month < 1 || month > 12) {
+      throw new Error('Month must be between 01 and 12');
+    }
+    const lastDay = new Date(year, month, 0).getDate();
+    return new Date(Date.UTC(year, month - 1, lastDay, 23, 59, 59, 999));
+  }
+
   // Pattern: MM/YYYY or M/YYYY
   const mmyyyyMatch = trimmed.match(/^(\d{1,2})\/(\d{4})$/);
   if (mmyyyyMatch) {
