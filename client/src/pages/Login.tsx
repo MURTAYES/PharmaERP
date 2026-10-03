@@ -40,14 +40,14 @@ export function Login() {
       <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-9 shadow-2xl border border-slate-200/80 flex flex-col z-10 animate-in fade-in zoom-in-95 duration-200">
         {/* Header Hero Branding */}
         <div className="flex flex-col items-center text-center gap-3 mb-7">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-md">
-            <span className="material-symbols-outlined text-[32px]">medical_services</span>
+          <div className="w-16 h-16 rounded-2xl bg-[#002F34] p-2 flex items-center justify-center text-white shadow-lg shadow-[#002F34]/20">
+            <img src="/logo.png" alt="PharmaERP Logo" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              Pharm<span className="text-teal-600">ERP</span>
+            <h1 className="text-2xl font-black text-[#002F34] tracking-tight">
+              Pharma<span className="text-[#00A887]">ERP</span>
             </h1>
-            <p className="text-xs font-semibold text-slate-500 mt-1">
+            <p className="text-xs font-semibold text-[#5F7D7A] mt-1">
               Clinical Pharmacy POS & Inventory Suite
             </p>
           </div>

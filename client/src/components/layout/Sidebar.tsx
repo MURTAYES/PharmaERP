@@ -15,12 +15,13 @@ export function Sidebar() {
       <div className="space-y-7">
         {/* Brand Logo Header */}
         <div className="flex items-center space-x-3 px-2">
-          <div className="w-9 h-9 rounded-full bg-[#002F34] flex items-center justify-center text-white shadow-sm">
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-              <path d="M19 10.5h-5.5V5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5.5H5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.5V19c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5.5H19c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z" />
-            </svg>
+          <div className="w-10 h-10 rounded-2xl bg-[#002F34] p-1.5 flex items-center justify-center text-white shadow-sm shrink-0">
+            <img src="/logo.png" alt="PharmaERP Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="font-bold text-xl tracking-tight text-[#002F34]">Pharmacy</span>
+          <div className="flex flex-col">
+            <span className="font-bold text-lg tracking-tight text-[#002F34] leading-tight">PharmaERP</span>
+            <span className="text-[10px] font-semibold text-[#5F7D7A] tracking-wider uppercase">Pharmacy CRM</span>
+          </div>
         </div>
 
         {/* Navigation Menus */}
