@@ -188,19 +188,13 @@ export const Inventory: React.FC = () => {
     setIsCostModalOpen(true);
   };
 
-  // Helper colors for medication avatar squares
-  const getInitialsBadge = (name: string, idx: number) => {
-    const initials = name
-      .split(' ')
-      .map((w) => w[0])
-      .join('')
-      .substring(0, 2)
-      .toUpperCase();
-    const bgColors = ['bg-[#E5F5F2] text-[#0A6458]', 'bg-[#FEEADB] text-[#A64F19]', 'bg-[#FCE4E6] text-[#B02837]', 'bg-[#E2E7FE] text-[#344893]'];
-    return {
-      initials: initials || 'RX',
-      className: bgColors[idx % bgColors.length],
-    };
+  const handleCostModalSuccess = () => {
+    setIsCostModalOpen(false);
+    setSelectedBatchForCost(null);
+    loadData();
+    if (expandedItemId) {
+      handleExpandItem(expandedItemId);
+    }
   };
 
   return (
@@ -489,12 +483,11 @@ export const Inventory: React.FC = () => {
 
           <div className="flex flex-col gap-3.5">
             {items.slice(0, 4).map((item, idx) => {
-              const badge = getInitialsBadge(item.tradeName, idx);
               return (
                 <div key={item._id} className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-[#F6FAF9] transition-colors border border-transparent hover:border-[#E1EEEB]">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl ${badge.className} flex items-center justify-center font-bold text-xs shrink-0`}>
-                      {badge.initials}
+                    <div className="w-7 h-7 rounded-lg bg-[#EAEFF0] text-[#002F34] font-bold text-xs flex items-center justify-center shrink-0">
+                      {idx + 1}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-[#0F2E2B]">{item.tradeName}</span>
@@ -693,8 +686,7 @@ export const Inventory: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                items.map((item, idx) => {
-                  const badge = getInitialsBadge(item.tradeName, idx);
+                items.map((item) => {
                   const isExpanded = expandedItemId === item._id;
                   const totalSellable = item.totalSellablePieces ?? 0;
 
@@ -702,18 +694,11 @@ export const Inventory: React.FC = () => {
                     <React.Fragment key={item._id}>
                       <tr className="hover:bg-[#F9FCFB] transition-colors group">
                         <td className="py-3.5 px-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg ${badge.className} flex items-center justify-center font-bold text-[11px] shrink-0`}>
-                              {badge.initials}
-                            </div>
-                            <div>
-                              <div className="font-bold text-[#0D2F2B] group-hover:text-[#05534A] transition-colors">
-                                {item.tradeName}
-                              </div>
-                              <div className="text-[10px] text-[#849693]">
-                                SKU: {item.itemCode}
-                              </div>
-                            </div>
+                          <div className="font-bold text-[#0D2F2B] group-hover:text-[#05534A] transition-colors text-xs">
+                            {item.tradeName}
+                          </div>
+                          <div className="text-[10px] text-[#849693] font-mono mt-0.5">
+                            SKU: {item.itemCode}
                           </div>
                         </td>
                         <td className="py-3.5 px-3">
@@ -1028,11 +1013,7 @@ export const Inventory: React.FC = () => {
             setIsCostModalOpen(false);
             setSelectedBatchForCost(null);
           }}
-          onSuccess={() => {
-            setIsCostModalOpen(false);
-            setSelectedBatchForCost(null);
-            loadData();
-          }}
+          onSuccess={handleCostModalSuccess}
         />
       )}
     </div>

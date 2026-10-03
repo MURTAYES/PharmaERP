@@ -406,10 +406,7 @@ export function Dashboard() {
             <tbody className="divide-y divide-slate-50 font-medium">
               {recentTransactions.map((tx: any, idx: number) => (
                 <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-3 flex items-center space-x-2.5">
-                    <div className={`w-7 h-7 rounded-full ${tx.color} text-[#002F34] font-bold text-[10px] flex items-center justify-center`}>
-                      {tx.initials}
-                    </div>
+                  <td className="py-3.5 px-3">
                     <span className="font-bold text-[#002F34]">{tx.customerName}</span>
                   </td>
                   <td className="py-3.5 px-3 text-slate-600">{tx.productName}</td>
