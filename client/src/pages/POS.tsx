@@ -74,7 +74,12 @@ export const POS: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // F2 or '/' to Focus Product Name Search
-      if (e.key === 'F2' || (e.key === '/' && (e.target as HTMLElement).tagName !== 'INPUT' && (e.target as HTMLElement).tagName !== 'TEXTAREA')) {
+      if (
+        e.key === 'F2' ||
+        (e.key === '/' &&
+          (e.target as HTMLElement).tagName !== 'INPUT' &&
+          (e.target as HTMLElement).tagName !== 'TEXTAREA')
+      ) {
         e.preventDefault();
         productSearchInputRef.current?.focus();
       }
@@ -477,7 +482,7 @@ export const POS: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 text-left font-sans">
+    <div className="space-y-7 max-w-[1440px] w-full mx-auto text-left">
       {/* Offline Warning Banner */}
       {!isOnline && (
         <div className="p-4 bg-rose-600 text-white font-bold text-xs rounded-2xl flex items-center justify-between shadow-lg animate-pulse">
@@ -507,50 +512,42 @@ export const POS: React.FC = () => {
       )}
 
       {successMsg && (
-        <div className="p-3.5 bg-[#E7F6F3] border border-[#C5E8E0] text-[#004D40] text-xs font-bold rounded-2xl flex items-center justify-between shadow-xs">
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs font-bold rounded-2xl flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-[#00A887] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>{successMsg}</span>
           </div>
-          <button onClick={() => setSuccessMsg(null)} className="cursor-pointer text-[#004D40] hover:text-[#002F34]">
+          <button onClick={() => setSuccessMsg(null)} className="cursor-pointer text-emerald-900 hover:text-black">
             ✕
           </button>
         </div>
       )}
 
-      {/* Top POS Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white border border-[#E2EBE8] rounded-[24px] shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-[#002F34] text-white flex items-center justify-center shadow-md shadow-[#002F34]/20">
-            <svg className="w-6 h-6 text-[#97D8D0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-[#002F34] tracking-tight">Point of Sale Counter</h1>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E7F6F3] text-[#007062] border border-[#C5E8E0]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00A887] ring-2 ring-[#00A887]/30"></span>
-                Fast Counter
-              </span>
-            </div>
-            <p className="text-[11px] text-[#5F7D7A] font-medium mt-0.5">High-speed barcode scanner & keyboard dispensing terminal</p>
-          </div>
+      {/* Overview Title and Action Buttons Row (Matching Dashboard / Inventory) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#002F34]">Point of Sale</h1>
+          <p className="text-xs text-slate-500 mt-0.5">High-speed counter billing & barcode dispensing terminal</p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2.5">
+        {/* Action Buttons in Dashboard Style */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white px-3.5 py-1.5 rounded-full border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-[#00A887]"></span>
+            <span>Counter Active</span>
+          </div>
+
           <button
             type="button"
             onClick={() => {
               loadHeldBills();
               setShowHeldDrawer(true);
             }}
-            className="px-4 py-2 bg-[#F4F7F6] hover:bg-[#E8F0ED] text-[#002F34] text-xs font-bold rounded-xl border border-[#D5E3DE] flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
+            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#002F34] bg-[#F3F7F6] hover:bg-slate-200/70 rounded-full transition-all cursor-pointer shadow-sm"
           >
-            <svg className="w-4 h-4 text-[#006059]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 text-[#006059]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>Held Bills (F9)</span>
@@ -565,9 +562,9 @@ export const POS: React.FC = () => {
             type="button"
             onClick={() => setShowHoldModal(true)}
             disabled={lines.length === 0}
-            className="px-4 py-2 bg-white hover:bg-[#F4F7F6] text-[#5F7D7A] hover:text-[#002F34] text-xs font-bold rounded-xl border border-[#D5E3DE] flex items-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
+            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#002F34] hover:bg-[#073D43] rounded-full shadow-md transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <svg className="w-4 h-4 text-[#7A9894]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
             </svg>
             <span>Hold Cart (F8)</span>
@@ -575,48 +572,43 @@ export const POS: React.FC = () => {
         </div>
       </div>
 
-      {/* Main POS Interface (2 Columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left Column (Search, Customer Bar & Cart - 8 Cols) */}
-        <div className="lg:col-span-8 space-y-4 flex flex-col">
-          {/* Dual Medicine Search Bars with F2 and F3 Shortcuts */}
+      {/* Main POS Layout (2 Columns matching Dashboard / Inventory Card System) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Dispensing & Cart Card (8 Cols) */}
+        <div className="lg:col-span-8 bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col gap-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h2 className="text-sm font-bold text-[#002F34]">Dispensing Counter</h2>
+              <p className="text-[11px] text-slate-400">Scan barcode or search medicine to add items</p>
+            </div>
+            <span className="text-[11px] font-semibold text-slate-400 font-mono">
+              Terminal: POS-01
+            </span>
+          </div>
+
+          {/* Dual Medicine Search Bars */}
           <POSItemSearch
             onSelectItem={handleSelectItem}
             productInputRef={productSearchInputRef}
             genericInputRef={genericSearchInputRef}
           />
 
-          {/* Customer Quick Info Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-white border border-[#E2EBE8] rounded-[22px] shadow-sm">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7A9894]">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Customer Name (Optional / Walk-in)"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full h-10 pl-9 pr-3 bg-[#F8FAF9] border border-[#D5E3DE] rounded-xl text-xs font-semibold text-[#002F34] placeholder:text-[#8AA6A1] focus:bg-white focus:border-[#002F34] focus:outline-none transition-all shadow-2xs"
-              />
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7A9894]">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Mobile 01XXXXXXXXX (Optional)"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                className="w-full h-10 pl-9 pr-3 bg-[#F8FAF9] border border-[#D5E3DE] rounded-xl text-xs font-semibold font-mono text-[#002F34] placeholder:text-[#8AA6A1] focus:bg-white focus:border-[#002F34] focus:outline-none transition-all shadow-2xs"
-              />
-            </div>
+          {/* Customer Quick Inputs in Dashboard Pill Style */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input
+              type="text"
+              placeholder="Customer Name (Optional / Walk-in)"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="w-full bg-[#F3F7F6] border-none text-xs rounded-full py-2.5 px-4 focus:ring-1 focus:ring-[#002F34] focus:bg-white text-[#002F34] placeholder-slate-400 font-medium transition-all"
+            />
+            <input
+              type="text"
+              placeholder="Mobile 01XXXXXXXXX (Optional)"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className="w-full bg-[#F3F7F6] border-none text-xs rounded-full py-2.5 px-4 focus:ring-1 focus:ring-[#002F34] focus:bg-white text-[#002F34] placeholder-slate-400 font-mono font-medium transition-all"
+            />
           </div>
 
           {/* Cart Table */}
@@ -631,35 +623,30 @@ export const POS: React.FC = () => {
           />
         </div>
 
-        {/* Right Column (Summary & Checkout - 4 Cols) */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="p-6 bg-white border border-[#E2EBE8] rounded-[28px] shadow-sm space-y-5 sticky top-20">
+        {/* Right Column: Payment & Financial Summary Card (4 Cols) */}
+        <div className="lg:col-span-4 bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between space-y-5 sticky top-22 self-start">
+          <div className="space-y-4">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#EEF3F2] pb-3.5">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#00A887]"></span>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[#002F34]">
-                  Payment Summary
-                </h2>
-              </div>
-              <span className="text-[11px] font-mono font-bold text-[#007062] bg-[#E1F6F0] border border-[#BCE8DD] px-2.5 py-0.5 rounded-full">
-                {lines.length} Items · {calculations.totalPieces} Pcs
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="text-sm font-bold text-[#002F34]">Payment Summary</h2>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#97D8D0]/30 text-[#002F34] border border-[#97D8D0]/50">
+                {lines.length} Items • {calculations.totalPieces} Pcs
               </span>
             </div>
 
-            {/* Financial Calculations Breakdown */}
+            {/* Financial Calculations */}
             <div className="space-y-3 text-xs">
-              <div className="flex justify-between text-[#5F7D7A] font-medium">
-                <span>Subtotal Amount:</span>
+              <div className="flex justify-between text-slate-500 font-medium">
+                <span>Subtotal Amount</span>
                 <span className="font-mono font-bold text-[#002F34] text-sm">
                   ৳ {calculations.subtotal}
                 </span>
               </div>
 
-              {/* Discount Input & Quick Pills */}
-              <div className="pt-2.5 border-t border-[#EEF3F2] space-y-2">
+              {/* Discount Section */}
+              <div className="pt-2.5 border-t border-slate-100 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#002F34] font-bold">Special Discount (%):</span>
+                  <span className="text-slate-600 font-semibold">Special Discount</span>
                   <div className="flex items-center gap-1.5">
                     <input
                       type="number"
@@ -668,23 +655,23 @@ export const POS: React.FC = () => {
                       max="100"
                       value={discountPercent}
                       onChange={(e) => setDiscountPercent(e.target.value)}
-                      className="w-16 h-8 text-right px-2 bg-[#F8FAF9] border border-[#D5E3DE] rounded-lg text-xs font-mono font-bold text-[#002F34] focus:bg-white focus:border-[#002F34] focus:outline-none"
+                      className="w-14 h-7 text-right px-2 bg-[#F3F7F6] border-none rounded-lg text-xs font-mono font-bold text-[#002F34] focus:ring-1 focus:ring-[#002F34]"
                     />
-                    <span className="text-[#5F7D7A] font-bold">%</span>
+                    <span className="text-slate-400 font-bold">%</span>
                   </div>
                 </div>
 
-                {/* Quick Discount Presets */}
+                {/* Quick Discount Pills */}
                 <div className="flex items-center gap-1.5 justify-end">
                   {['0', '5', '7.5', '10'].map((d) => (
                     <button
                       key={d}
                       type="button"
                       onClick={() => setDiscountPercent(d)}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded-md border transition-all cursor-pointer ${
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-full transition-all cursor-pointer ${
                         discountPercent === d
-                          ? 'bg-[#002F34] text-white border-[#002F34]'
-                          : 'bg-[#F8FAF9] text-[#5F7D7A] border-[#D5E3DE] hover:bg-[#E7F6F3]'
+                          ? 'bg-[#002F34] text-white'
+                          : 'bg-[#F3F7F6] text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       {d}%
@@ -694,72 +681,71 @@ export const POS: React.FC = () => {
               </div>
 
               {parseFloat(calculations.discountAmount) > 0 && (
-                <div className="flex justify-between text-[#007062] font-semibold">
-                  <span>Discount Saved:</span>
+                <div className="flex justify-between text-emerald-700 font-semibold">
+                  <span>Discount Saved</span>
                   <span className="font-mono font-bold">- ৳ {calculations.discountAmount}</span>
                 </div>
               )}
 
-              {/* Charges / VAT Breakdown */}
+              {/* Charges / VAT */}
               {calculations.charges.map((ch, i) => (
-                <div key={i} className="flex justify-between text-[#5F7D7A] font-medium">
-                  <span>{ch.name}:</span>
+                <div key={i} className="flex justify-between text-slate-500 font-medium">
+                  <span>{ch.name}</span>
                   <span className="font-mono font-bold text-[#002F34]">+ ৳ {ch.amount}</span>
                 </div>
               ))}
             </div>
+          </div>
 
-            {/* Grand Total Display Card */}
-            <div className="p-5 bg-[#F0FAF7] border border-[#CEE8E2] rounded-[22px] text-center space-y-1 shadow-2xs">
+          <div className="space-y-4 pt-2">
+            {/* Grand Total Accent Card matching Dashboard's Soft Mint hero pills */}
+            <div className="bg-[#97D8D0]/25 border border-[#97D8D0]/50 rounded-2xl p-4 text-center space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#006059] block">
                 Total Payable Amount
               </span>
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-xl font-bold text-[#007062]">৳</span>
-                <span className="text-3xl sm:text-4xl font-black font-mono text-[#002F34] tracking-tight">
-                  {calculations.grandTotal}
-                </span>
-              </div>
+              <span className="text-3xl font-extrabold text-[#002F34] tracking-tight font-mono block">
+                ৳ {calculations.grandTotal}
+              </span>
             </div>
 
-            {/* Proceed to Checkout Action */}
+            {/* Proceed to Pay CTA */}
             <button
               type="button"
               onClick={() => setShowPaymentModal(true)}
               disabled={lines.length === 0 || !isOnline}
-              className="w-full py-3.5 rounded-2xl bg-[#002F34] text-white text-sm font-bold shadow-lg shadow-[#002F34]/25 hover:bg-[#012428] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none"
+              className="w-full py-3.5 rounded-full bg-[#002F34] text-white text-xs font-bold shadow-md hover:bg-[#073D43] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none"
             >
-              <svg className="w-5 h-5 text-[#97D8D0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#97D8D0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <span>Pay & Checkout (F4)</span>
             </button>
 
             {/* Keyboard Shortcuts Helper Card */}
-            <div className="p-3.5 bg-[#F8FAF9] rounded-2xl border border-[#E8EFEA] text-[11px] text-[#5F7D7A] space-y-2">
-              <span className="font-bold text-[#002F34] block uppercase tracking-wider text-[10px]">
-                Keyboard Shortcuts
+            <div className="p-3.5 bg-[#F8FAF9] rounded-2xl border border-slate-100 text-[10px] text-slate-500 space-y-2">
+              <span className="font-bold text-slate-700 block uppercase tracking-wider text-[9px]">
+                Shortcuts
               </span>
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
-                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
-                  <span>Brand Search:</span>
-                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F2</kbd>
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-md border border-slate-100">
+                  <span>Brand:</span>
+                  <kbd className="font-mono font-bold text-[#002F34]">F2</kbd>
                 </div>
-                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-md border border-slate-100">
                   <span>Generic:</span>
-                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F3</kbd>
+                  <kbd className="font-mono font-bold text-[#002F34]">F3</kbd>
                 </div>
-                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
-                  <span>Pay / Bill:</span>
-                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F4</kbd>
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-md border border-slate-100">
+                  <span>Pay:</span>
+                  <kbd className="font-mono font-bold text-[#002F34]">F4</kbd>
                 </div>
-                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
-                  <span>Hold Cart:</span>
-                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F8</kbd>
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-md border border-slate-100">
+                  <span>Hold:</span>
+                  <kbd className="font-mono font-bold text-[#002F34]">F8</kbd>
                 </div>
-                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8] col-span-2">
-                  <span>Resume Held Bills:</span>
-                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F9</kbd>
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-md border border-slate-100 col-span-2">
+                  <span>Resume Bills:</span>
+                  <kbd className="font-mono font-bold text-[#002F34]">F9</kbd>
                 </div>
               </div>
             </div>
