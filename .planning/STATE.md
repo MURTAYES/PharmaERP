@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 current_phase: 2
 current_phase_name: Inventory & Stock Management (End-to-End)
-status: planned
-stopped_at: Phase 2 planned (4 plans)
-last_updated: "2026-10-03T09:03:00.000Z"
+status: complete
+stopped_at: Phase 2 executed and verified (4/4 plans complete)
+last_updated: "2026-10-03T09:15:00.000Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 2 planned with 4 vertical MVP plans
-state_head: f5d6809fdc9c763002d5e985dc9348b0550e3db0
+last_activity_desc: Phase 2 executed with 4 vertical MVP plans and verified
+state_head: ""
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 3
-  percent: 43
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State
@@ -23,37 +23,37 @@ progress:
 See: [.planning/PROJECT.md](file:///g:/code/PharmaERP/.planning/PROJECT.md) (updated 2026-10-03)
 
 **Core value:** Accurate batch-wise stock with expiry visibility and fast counter billing — every sale traces back to a specific batch, every price override is recorded, and stock can never go negative through concurrent operations.
-**Current focus:** Phase 2: Inventory & Stock Management (End-to-End) — Planned (4 plans ready for execution)
+**Current focus:** Phase 2: Inventory & Stock Management (End-to-End) — Complete. Ready for Phase 3: Point of Sale & Billing (End-to-End)
 
 ## Current Position
 
 Phase: 2 of 6 (Inventory & Stock Management (End-to-End))
-Plan: 0 of 4 in current phase
-Status: Planned — Ready to Execute
-Last activity: 2026-10-03 — Phase 2 planned with 4 vertical MVP plans
+Plan: 4 of 4 in current phase (Complete)
+Status: Complete — Verified
+Last activity: 2026-10-03 — Phase 2 completed and verified (4/4 plans)
 
-Progress: [████░░░░░░] 43%
+Progress: [██████████] 100% (Phases 1 & 2 Complete, 7/7 Plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 7
 - Average duration: ~15m
-- Total execution time: 0.8 hours
+- Total execution time: 1.8 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Core Foundation & Auth (End-to-End) | 3/3 | ~45m | ~15m |
-| 2. Inventory & Stock Management (End-to-End) | - | - | - |
+| 2. Inventory & Stock Management (End-to-End) | 4/4 | ~60m | ~15m |
 | 3. Point of Sale & Billing (End-to-End) | - | - | - |
 | 4. Returns & Credit Notes (End-to-End) | - | - | - |
 | 5. Analytics & Reporting Suite (End-to-End) | - | - | - |
 | 6. Hardening, Integration & Deployment | - | - | - |
 
 **Recent Trend:**
-- Last 3 plans: 01-01 (done), 01-02 (done), 01-03 (done)
+- Last 4 plans: 02-01 (done), 02-02 (done), 02-03 (done), 02-04 (done)
 - Trend: Nominal
 
 *Updated after each plan completion*
@@ -69,15 +69,19 @@ Recent decisions affecting current work:
 - [Init]: MERN stack with TypeScript, Express, React (Vite), MongoDB Atlas replica set.
 - [Init]: Strict Decimal128 money precision with unrounded math, rounding only grand total (2dp half up).
 - [Init]: Server-side response serializer to guarantee zero cost/profit leakage to pharmacist role.
-- [Init]: Atomic checkout with `$gte` stock guard and gap-free counters in single MongoDB transactions.
+- [Phase 2]: Multi-unit conversion strictly uses `piece` as base unit, with Strip Price = `piece MRP * piecesPerStrip` and Box Price = `piece MRP * piecesPerStrip * stripsPerBox`.
+- [Phase 2]: Stock receiving with identical `itemId + batchNumber + expiryDate` merges into existing batch incrementing `qtySellable`.
+- [Phase 2]: Pharmacist receiving marks `isCostMissing: true`, omitting purchase price, editable later by Owner.
+- [Phase 2]: MM/YYYY date input auto-expands to last calendar day of the month in UTC.
+- [Phase 2]: Stock movements are recorded in an append-only collection with immutable pre-hooks.
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Deferred Items
 
@@ -89,6 +93,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-03T08:45:07.301Z
-Stopped at: Phase 1 planned (3 plans)
-Resume file: .planning/phases/01-core-foundation-auth-end-to-end/01-01-PLAN.md
+Last session: 2026-10-03T09:15:00.000Z
+Stopped at: Phase 2 verified and complete (4/4 plans)
+Resume file: .planning/phases/02-inventory-stock-management-end-to-end/02-VERIFICATION.md

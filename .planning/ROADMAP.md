@@ -11,7 +11,7 @@ PharmaERP is delivered in vertical end-to-end MVP slices. Each phase delivers a 
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Core Foundation & Auth (End-to-End)** - Working app shell, MongoDB Atlas connection, JWT authentication, RBAC with field-stripping serializer, user management UI, pharmacy settings UI, and audit logging.
-- [ ] **Phase 2: Inventory & Stock Management (End-to-End)** - Medicine catalog, unit conversion hierarchies, MRP, type-ahead search, batch stock receiving UI with duplicate merging, stock buckets, manual adjustments, and live expiry/low-stock alerts.
+- [x] **Phase 2: Inventory & Stock Management (End-to-End)** - Medicine catalog, unit conversion hierarchies, MRP, type-ahead search, batch stock receiving UI with duplicate merging, stock buckets, manual adjustments, and live expiry/low-stock alerts.
 - [ ] **Phase 3: Point of Sale & Billing (End-to-End)** - Counter billing interface, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume bills, discounts, charges, atomic checkout with $gte guard, sequential invoices, and thermal receipt printing.
 - [ ] **Phase 4: Returns & Credit Notes (End-to-End)** - Invoice lookup for sales returns, stock bucket destination routing, proportional refund calculations, sequential credit notes, and supplier return invoices.
 - [ ] **Phase 5: Analytics & Reporting Suite (End-to-End)** - Real-time owner dashboard, sales reports, profit/loss analysis, price override audit, non-FEFO report, stock valuation, movement ledger, and CSV export.
@@ -50,10 +50,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01: Item master and unit conversion data models, Decimal128 schema handling, and type-ahead search API
-- [ ] 02-02: Batch stock receiving engine with duplicate merging, cost-missing logic, stock buckets, and adjustment workflow
-- [ ] 02-03: Stock movement ledger, expiry calculation service, and low-stock/expiry alerting engine
-- [ ] 02-04: End-to-end Inventory UI: item catalog, batch receiving modal, stock adjustment interface, and alert panels
+- [x] 02-01: Item master and unit conversion data models, Decimal128 schema handling, and type-ahead search API
+- [x] 02-02: Batch stock receiving engine with duplicate merging, cost-missing logic, stock buckets, and adjustment workflow
+- [x] 02-03: Stock movement ledger, expiry calculation service, and low-stock/expiry alerting engine
+- [x] 02-04: End-to-end Inventory UI: item catalog, batch receiving modal, stock adjustment interface, and alert panels
 
 ### Phase 3: Point of Sale & Billing (End-to-End)
 **Goal**: Deliver a high-speed counter POS billing screen with keyboard/touch optimization, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume, discounts, charges, atomic multi-document checkout transactions, sequential invoices, and thermal receipt printing.

@@ -30,8 +30,16 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Phase 1 Actions */}
+        {/* Quick Actions */}
         <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            to="/inventory"
+            className="h-10 px-4 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary-container shadow-clinical-glow transition-all flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">medication</span>
+            <span>Open Inventory</span>
+          </Link>
+
           {role === 'owner' && (
             <>
               <Link
@@ -43,9 +51,9 @@ export function Dashboard() {
               </Link>
               <Link
                 to="/settings"
-                className="h-10 px-4 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary-container shadow-clinical-glow transition-all flex items-center gap-2"
+                className="h-10 px-4 rounded-xl bg-surface-container-low text-on-surface font-semibold text-xs hover:bg-surface-container transition-all flex items-center gap-2"
               >
-                <span className="material-symbols-outlined text-[18px]">tune</span>
+                <span className="material-symbols-outlined text-[18px] text-primary">tune</span>
                 <span>Pharmacy Settings</span>
               </Link>
             </>
@@ -55,26 +63,28 @@ export function Dashboard() {
 
       {/* Metric Overview (Stats Bar) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        {/* Stat 1: Architecture Status */}
-        <Card hoverEffect className="flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">System Status</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-800">
-              <span className="material-symbols-outlined text-[22px]">health_and_safety</span>
+        {/* Stat 1: Inventory Management */}
+        <Link to="/inventory">
+          <Card hoverEffect className="flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Inventory Control</span>
+              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-teal-800">
+                <span className="material-symbols-outlined text-[22px]">inventory_2</span>
+              </div>
             </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-2xl font-extrabold text-primary font-mono">ONLINE</div>
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-secondary font-semibold">
-              <span className="material-symbols-outlined text-[16px]">check_circle</span>
-              <span>Atlas Replica Set Connected</span>
+            <div className="mt-4">
+              <div className="text-2xl font-extrabold text-primary font-mono">ACTIVE</div>
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-secondary font-semibold">
+                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                <span>Batch & Expiry System Live</span>
+              </div>
             </div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-surface-container flex items-center justify-between text-xs text-on-surface-variant font-mono">
-            <span>Decimal128 Mode: Strict</span>
-            <span>API: Ready</span>
-          </div>
-        </Card>
+            <div className="mt-3 pt-3 border-t border-surface-container flex items-center justify-between text-xs text-on-surface-variant font-mono">
+              <span>FEFO Suggestion: Ready</span>
+              <span>Search: &lt;300ms</span>
+            </div>
+          </Card>
+        </Link>
 
         {/* Stat 2: Security & Field Stripping */}
         <Card hoverEffect className="flex flex-col justify-between">
@@ -116,22 +126,22 @@ export function Dashboard() {
           </div>
         </Card>
 
-        {/* Stat 4: Walking Skeleton Phase 1 */}
+        {/* Stat 4: Phase 2 Delivery */}
         <Card hoverEffect className="flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Phase 1 Delivery</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Phase 2 Delivery</span>
             <div className="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary">
               <span className="material-symbols-outlined text-[22px]">verified</span>
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl font-extrabold text-primary font-mono">PHASE 1</div>
+            <div className="text-2xl font-extrabold text-primary font-mono">PHASE 2</div>
             <div className="flex items-center gap-1.5 mt-1 text-xs text-on-surface-variant">
-              <span>Foundation & Auth Proven</span>
+              <span>Inventory & Stock Slices Live</span>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-surface-container flex items-center justify-between text-xs text-on-surface-variant font-mono">
-            <span>Next: Inventory (Ph 2)</span>
+            <span>Next: Point of Sale (Ph 3)</span>
             <span>Slice: MVP</span>
           </div>
         </Card>

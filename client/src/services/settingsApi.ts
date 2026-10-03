@@ -12,3 +12,5 @@ export const settingsApi = {
     return res.data;
   },
 };
+
+export const getSettings = settingsApi.get;

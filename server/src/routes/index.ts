@@ -3,6 +3,10 @@ import authRoutes from './authRoutes.js';
 import userRoutes from './userRoutes.js';
 import settingsRoutes from './settingsRoutes.js';
 import auditRoutes from './auditRoutes.js';
+import itemRoutes from './itemRoutes.js';
+import batchRoutes from './batchRoutes.js';
+import stockAdjustmentRoutes from './stockAdjustmentRoutes.js';
+import alertRoutes from './alertRoutes.js';
 
 const router = Router();
 
@@ -10,6 +14,10 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/audit', auditRoutes);
+router.use('/items', itemRoutes);
+router.use('/batches', batchRoutes);
+router.use('/stock-adjustments', stockAdjustmentRoutes);
+router.use('/alerts', alertRoutes);
 
 router.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'PharmaERP API' });

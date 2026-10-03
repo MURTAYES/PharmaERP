@@ -51,3 +51,72 @@ export interface AuditLogItem {
   ipAddress?: string;
   userAgent?: string;
 }
+
+export interface UnitHierarchy {
+  baseUnit: 'piece';
+  piecesPerStrip: number;
+  stripsPerBox: number;
+}
+
+export interface Item {
+  _id: string;
+  tradeName: string;
+  genericName: string;
+  itemCode: string;
+  category: string;
+  manufacturer: string;
+  shelfLocation?: string;
+  unitHierarchy: UnitHierarchy;
+  mrpPerPiece: string;
+  stripPrice?: string;
+  boxPrice?: string;
+  totalPiecesPerBox?: number;
+  lowStockThresholdPieces: number;
+  totalSellablePieces?: number;
+  totalDamagedPieces?: number;
+  totalExpiredPieces?: number;
+  batchCount?: number;
+  earliestExpiry?: string;
+  isLowStock?: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Batch {
+  _id: string;
+  itemId: string | Item;
+  batchNumber: string;
+  expiryDate: string;
+  qtySellable: number;
+  qtyDamaged: number;
+  qtyExpired: number;
+  purchasePricePerPiece?: string;
+  isCostMissing: boolean;
+  supplierName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockMovement {
+  _id: string;
+  batchId: string | Batch;
+  itemId: string | Item;
+  type: 'RECEIVE' | 'ADJUST_TRANSFER' | 'WRITE_OFF' | 'SALE_DEDUCT' | 'RETURN_RESTOCK';
+  qtyChangePieces: number;
+  bucketFrom?: 'sellable' | 'damaged' | 'expired';
+  bucketTo?: 'sellable' | 'damaged' | 'expired' | 'write_off';
+  reasonCategory?: string;
+  reasonDetail?: string;
+  userId: string | User;
+  timestamp: string;
+}
+
+export interface AlertSummary {
+  expiredCount: number;
+  critical30Count: number;
+  warning60Count: number;
+  notice90Count: number;
+  lowStockCount: number;
+  totalAlerts: number;
+}

@@ -38,3 +38,5 @@ export function authMiddleware(req: AuthenticatedRequest, res: Response, next: N
     return;
   }
 }
+
+export const authenticate = authMiddleware;

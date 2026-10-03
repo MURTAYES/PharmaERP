@@ -6,6 +6,7 @@ import { Dashboard } from './pages/Dashboard.tsx';
 import { Users } from './pages/Users.tsx';
 import { Settings } from './pages/Settings.tsx';
 import { AuditLogs } from './pages/AuditLogs.tsx';
+import { Inventory } from './pages/Inventory.tsx';
 
 export function App() {
   return (
@@ -17,6 +18,7 @@ export function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/inventory" element={<Inventory />} />
 
           {/* Owner Only Management Routes */}
           <Route element={<ProtectedRoute requiredRole="owner" />}>

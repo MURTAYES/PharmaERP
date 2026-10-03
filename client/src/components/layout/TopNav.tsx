@@ -43,15 +43,10 @@ export function TopNav() {
             <span>Dashboard</span>
           </NavLink>
 
-          {/* Placeholders for upcoming phases */}
-          <span
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-on-surface-variant/40 cursor-not-allowed"
-            title="Phase 2 (Inventory & Stock Management)"
-          >
+          <NavLink to="/inventory" className={navItemClass}>
             <span className="material-symbols-outlined text-[18px]">medication</span>
             <span>Inventory</span>
-            <span className="text-[9px] bg-surface-container-high text-on-surface-variant px-1 rounded">v1.2</span>
-          </span>
+          </NavLink>
 
           <span
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-on-surface-variant/40 cursor-not-allowed"

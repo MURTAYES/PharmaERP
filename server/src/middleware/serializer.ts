@@ -52,3 +52,5 @@ export function responseSerializer(req: AuthenticatedRequest, res: Response, nex
 
   next();
 }
+
+export const serializerMiddleware = responseSerializer;

@@ -17,18 +17,18 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Inventory & Stock Management
 
-- [ ] **INVT-01**: User can manage item master (trade name, generic name, category, manufacturer, shelf location, low-stock threshold)
-- [ ] **INVT-02**: User can configure unit conversion hierarchy per item (base piece, strips, boxes with pieces-per-unit)
-- [ ] **INVT-03**: User can set MRP per piece with derived strip and box prices
-- [ ] **INVT-04**: User can search items with type-ahead search (<300ms) by trade name, generic name, or item code
-- [ ] **INVT-05**: User can receive stock per batch (batch number, expiry date, quantity in pieces/strips/boxes, purchase price, MRP, supplier name)
-- [ ] **INVT-06**: System deduplicates received batches by adding incoming quantity to existing batch matching item, batch number, and expiry
-- [ ] **INVT-07**: Pharmacist can receive stock without entering purchase price (batch automatically flagged as cost-missing)
-- [ ] **INVT-08**: System tracks three separate stock buckets per batch (sellable, damaged, expired)
-- [ ] **INVT-09**: Owner can adjust stock between buckets or write off stock with mandatory reason entry
-- [ ] **INVT-10**: System provides expiry tracking and dashboard alerts across configurable windows (90, 60, 30 days) and expired status
-- [ ] **INVT-11**: System generates low-stock alerts when total sellable pieces drop below item threshold
-- [ ] **INVT-12**: System maintains an append-only stock movement ledger recording all inventory transitions
+- [x] **INVT-01**: User can manage item master (trade name, generic name, category, manufacturer, shelf location, low-stock threshold)
+- [x] **INVT-02**: User can configure unit conversion hierarchy per item (base piece, strips, boxes with pieces-per-unit)
+- [x] **INVT-03**: User can set MRP per piece with derived strip and box prices
+- [x] **INVT-04**: User can search items with type-ahead search (<300ms) by trade name, generic name, or item code
+- [x] **INVT-05**: User can receive stock per batch (batch number, expiry date, quantity in pieces/strips/boxes, purchase price, MRP, supplier name)
+- [x] **INVT-06**: System deduplicates received batches by adding incoming quantity to existing batch matching item, batch number, and expiry
+- [x] **INVT-07**: Pharmacist can receive stock without entering purchase price (batch automatically flagged as cost-missing)
+- [x] **INVT-08**: System tracks three separate stock buckets per batch (sellable, damaged, expired)
+- [x] **INVT-09**: Owner can adjust stock between buckets or write off stock with mandatory reason entry
+- [x] **INVT-10**: System provides expiry tracking and dashboard alerts across configurable windows (90, 60, 30 days) and expired status
+- [x] **INVT-11**: System generates low-stock alerts when total sellable pieces drop below item threshold
+- [x] **INVT-12**: System maintains an append-only stock movement ledger recording all inventory transitions
 
 ### Billing & Point of Sale
 
@@ -135,18 +135,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SYS-05 | Phase 1 | Complete |
 | SYS-06 | Phase 1 | Complete |
 | SYS-07 | Phase 1 | Complete |
-| INVT-01 | Phase 2 | Pending |
-| INVT-02 | Phase 2 | Pending |
-| INVT-03 | Phase 2 | Pending |
-| INVT-04 | Phase 2 | Pending |
-| INVT-05 | Phase 2 | Pending |
-| INVT-06 | Phase 2 | Pending |
-| INVT-07 | Phase 2 | Pending |
-| INVT-08 | Phase 2 | Pending |
-| INVT-09 | Phase 2 | Pending |
-| INVT-10 | Phase 2 | Pending |
-| INVT-11 | Phase 2 | Pending |
-| INVT-12 | Phase 2 | Pending |
+| INVT-01 | Phase 2 | Complete |
+| INVT-02 | Phase 2 | Complete |
+| INVT-03 | Phase 2 | Complete |
+| INVT-04 | Phase 2 | Complete |
+| INVT-05 | Phase 2 | Complete |
+| INVT-06 | Phase 2 | Complete |
+| INVT-07 | Phase 2 | Complete |
+| INVT-08 | Phase 2 | Complete |
+| INVT-09 | Phase 2 | Complete |
+| INVT-10 | Phase 2 | Complete |
+| INVT-11 | Phase 2 | Complete |
+| INVT-12 | Phase 2 | Complete |
 | POS-01 | Phase 3 | Pending |
 | POS-02 | Phase 3 | Pending |
 | POS-03 | Phase 3 | Pending |
