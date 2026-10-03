@@ -221,25 +221,35 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
   const startTime = Date.now();
   try {
     const q = (req.query.q as string)?.trim();
+    const productName = ((req.query.productName || req.query.name) as string)?.trim();
+    const genericName = ((req.query.genericName || req.query.generic) as string)?.trim();
     const limit = Math.min(parseInt(req.query.limit as string, 10) || 15, 50);
 
-    if (!q) {
+    if (!q && !productName && !genericName) {
       res.json({ items: [], latencyMs: Date.now() - startTime });
       return;
     }
 
-    const regex = new RegExp(`^${q}`, 'i');
-    const anywhereRegex = new RegExp(q, 'i');
+    const searchQuery: Record<string, any> = { isActive: true };
 
-    const items = await Item.find({
-      isActive: true,
-      $or: [
-        { tradeName: regex },
+    if (productName && genericName) {
+      searchQuery.tradeName = new RegExp(productName, 'i');
+      searchQuery.genericName = new RegExp(genericName, 'i');
+    } else if (productName) {
+      searchQuery.tradeName = new RegExp(productName, 'i');
+    } else if (genericName) {
+      searchQuery.genericName = new RegExp(genericName, 'i');
+    } else if (q) {
+      const anywhereRegex = new RegExp(q, 'i');
+      searchQuery.$or = [
         { tradeName: anywhereRegex },
         { genericName: anywhereRegex },
-        { itemCode: regex },
-      ],
-    })
+        { itemCode: anywhereRegex },
+        { manufacturer: anywhereRegex },
+      ];
+    }
+
+    const items = await Item.find(searchQuery)
       .limit(limit)
       .lean();
 

@@ -36,10 +36,22 @@ export async function getItems(params: GetItemsParams = {}): Promise<GetItemsRes
   return res.data;
 }
 
-export async function searchItems(q: string, limit: number = 15): Promise<SearchItemsResponse> {
-  const res = await api.get<SearchItemsResponse>('/items/search', {
-    params: { q, limit },
-  });
+export interface SearchItemsParams {
+  q?: string;
+  productName?: string;
+  genericName?: string;
+  limit?: number;
+}
+
+export async function searchItems(
+  queryOrParams: string | SearchItemsParams,
+  limit: number = 15
+): Promise<SearchItemsResponse> {
+  const params =
+    typeof queryOrParams === 'string'
+      ? { q: queryOrParams, limit }
+      : { limit, ...queryOrParams };
+  const res = await api.get<SearchItemsResponse>('/items/search', { params });
   return res.data;
 }
 

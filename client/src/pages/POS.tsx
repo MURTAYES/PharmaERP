@@ -20,7 +20,8 @@ import { ThermalReceiptModal } from '../components/pos/ThermalReceiptModal';
 
 export const POS: React.FC = () => {
   const { settings } = useSettings();
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const productSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const genericSearchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Cart State
   const [lines, setLines] = useState<CartLineItem[]>([]);
@@ -72,10 +73,15 @@ export const POS: React.FC = () => {
   // Keyboard Shortcuts Hook
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // F2 or '/' to Focus Search
+      // F2 or '/' to Focus Product Name Search
       if (e.key === 'F2' || (e.key === '/' && (e.target as HTMLElement).tagName !== 'INPUT' && (e.target as HTMLElement).tagName !== 'TEXTAREA')) {
         e.preventDefault();
-        searchInputRef.current?.focus();
+        productSearchInputRef.current?.focus();
+      }
+      // F3 to Focus Generic Formulation Search
+      else if (e.key === 'F3') {
+        e.preventDefault();
+        genericSearchInputRef.current?.focus();
       }
       // F4: Open Payment
       else if (e.key === 'F4') {
@@ -573,8 +579,12 @@ export const POS: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left Column (Search, Customer Bar & Cart - 8 Cols) */}
         <div className="lg:col-span-8 space-y-4 flex flex-col">
-          {/* Medicine Search Bar with F2 Autofocus */}
-          <POSItemSearch onSelectItem={handleSelectItem} inputRef={searchInputRef} />
+          {/* Dual Medicine Search Bars with F2 and F3 Shortcuts */}
+          <POSItemSearch
+            onSelectItem={handleSelectItem}
+            productInputRef={productSearchInputRef}
+            genericInputRef={genericSearchInputRef}
+          />
 
           {/* Customer Quick Info Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-white border border-[#E2EBE8] rounded-[22px] shadow-sm">
@@ -732,19 +742,23 @@ export const POS: React.FC = () => {
               </span>
               <div className="grid grid-cols-2 gap-2 text-[10px]">
                 <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
-                  <span>Search:</span>
+                  <span>Brand Search:</span>
                   <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F2</kbd>
                 </div>
                 <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
-                  <span>Pay:</span>
+                  <span>Generic:</span>
+                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F3</kbd>
+                </div>
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
+                  <span>Pay / Bill:</span>
                   <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F4</kbd>
                 </div>
                 <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
-                  <span>Hold:</span>
+                  <span>Hold Cart:</span>
                   <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F8</kbd>
                 </div>
-                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
-                  <span>Resume:</span>
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8] col-span-2">
+                  <span>Resume Held Bills:</span>
                   <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F9</kbd>
                 </div>
               </div>
