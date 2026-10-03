@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 
 interface Particle {
@@ -376,13 +376,6 @@ export function Login() {
       {/* Interactive Floating Capsule & Tablet Physics Canvas */}
       <InteractiveCapsuleCanvas />
 
-      {/* Decorative Interactive Hint at top */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-white/80 shadow-xs text-[11px] font-semibold text-[#5F7D7A] pointer-events-none">
-        <span className="material-symbols-outlined text-[15px] text-[#00A887] animate-pulse">
-          touch_app
-        </span>
-        <span>Move cursor or click anywhere to interact with floating capsules</span>
-      </div>
 
       {/* Main Glassmorphic Login Card */}
       <div className="w-full max-w-[420px] bg-white/90 backdrop-blur-2xl rounded-[32px] p-8 sm:p-9 shadow-2xl border border-white/80 flex flex-col z-20 relative transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,47,52,0.18)]">
@@ -392,12 +385,7 @@ export function Login() {
             <img src="/logo.png" alt="PharmaERP Logo" className="h-12 w-auto object-contain" />
           </div>
           <div>
-            <div className="flex items-center justify-center gap-1.5">
-              <h1 className="text-2xl font-black text-[#002F34] tracking-tight">PharmaERP</h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#D7F1B5] text-[#002F34]">
-                v1.0
-              </span>
-            </div>
+            <h1 className="text-2xl font-black text-[#002F34] tracking-tight">PharmaERP</h1>
             <p className="text-xs font-semibold text-[#5F7D7A] mt-1">
               Pharmacy Point of Sale & Clinical ERP
             </p>
@@ -504,10 +492,15 @@ export function Login() {
         </div>
       </div>
 
-      {/* Footer System Status Badge */}
-      <div className="mt-6 z-20 flex items-center gap-2 text-[11px] font-bold text-[#5F7D7A]">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span>Secure Asia/Dhaka Cloud Instance Online</span>
+      {/* Footer Navigation Links */}
+      <div className="mt-6 z-20 flex items-center gap-4 text-xs font-bold text-[#5F7D7A]">
+        <Link to="/privacy" className="hover:text-[#002F34] transition-colors hover:underline">
+          Privacy Policy
+        </Link>
+        <span className="text-slate-300">•</span>
+        <Link to="/contact" className="hover:text-[#002F34] transition-colors hover:underline">
+          Contact Support
+        </Link>
       </div>
     </div>
   );

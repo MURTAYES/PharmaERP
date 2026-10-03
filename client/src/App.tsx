@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/layout/ProtectedRoute.tsx';
 import { AppLayout } from './components/layout/AppLayout.tsx';
 import { Login } from './pages/Login.tsx';
+import { PrivacyPolicy } from './pages/PrivacyPolicy.tsx';
+import { Contact } from './pages/Contact.tsx';
 import { Dashboard } from './pages/Dashboard.tsx';
 import { Users } from './pages/Users.tsx';
 import { Settings } from './pages/Settings.tsx';
@@ -17,6 +19,8 @@ export function App() {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/contact" element={<Contact />} />
 
       {/* Protected Routes for Authenticated Users */}
       <Route element={<ProtectedRoute />}>
