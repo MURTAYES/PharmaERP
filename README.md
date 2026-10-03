@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="client/public/logo.png" alt="PharmaERP Logo" width="80" height="80" />
+  <img src="https://raw.githubusercontent.com/MURTAYES/ApplyKit/main/public/logo.png" alt="PharmaERP Logo" width="80" height="80" />
 </p>
 
 <h1 align="center">PharmaERP</h1>
@@ -81,7 +81,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/PharmaERP.git
+git clone https://github.com/MURTAYES/PharmaERP.git
 cd PharmaERP
 
 # Install server dependencies
