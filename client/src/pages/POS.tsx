@@ -17,7 +17,6 @@ import { POSPaymentModal } from '../components/pos/POSPaymentModal';
 import { POSHoldBillModal } from '../components/pos/POSHoldBillModal';
 import { POSHeldBillsDrawer } from '../components/pos/POSHeldBillsDrawer';
 import { ThermalReceiptModal } from '../components/pos/ThermalReceiptModal';
-import { Button } from '../components/common/Button';
 
 export const POS: React.FC = () => {
   const { settings } = useSettings();
@@ -73,8 +72,8 @@ export const POS: React.FC = () => {
   // Keyboard Shortcuts Hook
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // F2: Focus Search
-      if (e.key === 'F2') {
+      // F2 or '/' to Focus Search
+      if (e.key === 'F2' || (e.key === '/' && (e.target as HTMLElement).tagName !== 'INPUT' && (e.target as HTMLElement).tagName !== 'TEXTAREA')) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
@@ -112,7 +111,7 @@ export const POS: React.FC = () => {
       const batches = res.batches;
 
       if (!batches || batches.length === 0) {
-        setError(`No sellable stock available for ${item.tradeName}`);
+        setError(`No sellable stock available in inventory for "${item.tradeName}"`);
         return;
       }
 
@@ -172,7 +171,7 @@ export const POS: React.FC = () => {
         setLines((prev) => [newLine, ...prev]);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Failed to select medicine');
+      setError(err.response?.data?.error || err.message || 'Failed to add medicine');
     }
   };
 
@@ -461,7 +460,7 @@ export const POS: React.FC = () => {
           window.print();
         }, 500);
       } else {
-        setSuccessMsg(`Sale completed: ${res.invoice.invoiceNumber}`);
+        setSuccessMsg(`Sale completed: Invoice #${res.invoice.invoiceNumber}`);
         setTimeout(() => setSuccessMsg(null), 4000);
       }
     } catch (err: any) {
@@ -472,76 +471,101 @@ export const POS: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 text-left">
+    <div className="space-y-4 text-left font-sans">
       {/* Offline Warning Banner */}
       {!isOnline && (
-        <div className="p-3.5 bg-red-600 text-white font-bold text-xs rounded-2xl flex items-center gap-2 shadow-lg animate-pulse">
-          <span className="material-symbols-outlined text-[20px]">wifi_off</span>
-          <span>Internet Connection Lost. POS checkout is locked to prevent corrupted inventory snapshots.</span>
+        <div className="p-4 bg-rose-600 text-white font-bold text-xs rounded-2xl flex items-center justify-between shadow-lg animate-pulse">
+          <div className="flex items-center gap-2.5">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 4.243a9 9 0 01-2.828-2.828m0 0l2.828-2.828M3 3l18 18" />
+            </svg>
+            <span>Internet Connection Lost. POS checkout is locked to prevent concurrency discrepancies.</span>
+          </div>
+          <span className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded">Offline Mode</span>
         </div>
       )}
 
       {/* Error & Success Toasts */}
       {error && (
-        <div className="p-3.5 bg-red-50 border border-red-200 text-red-900 text-xs font-bold rounded-2xl flex items-center justify-between shadow-sm">
+        <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-900 text-xs font-bold rounded-2xl flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-red-600">error</span>
+            <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             <span>{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="cursor-pointer text-red-600 hover:text-red-900">
-            <span className="material-symbols-outlined text-[16px]">close</span>
+          <button onClick={() => setError(null)} className="cursor-pointer text-rose-600 hover:text-rose-900">
+            ✕
           </button>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs font-bold rounded-2xl flex items-center gap-2 shadow-sm">
-          <span className="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
-          <span>{successMsg}</span>
+        <div className="p-3.5 bg-[#E7F6F3] border border-[#C5E8E0] text-[#004D40] text-xs font-bold rounded-2xl flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-[#00A887] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{successMsg}</span>
+          </div>
+          <button onClick={() => setSuccessMsg(null)} className="cursor-pointer text-[#004D40] hover:text-[#002F34]">
+            ✕
+          </button>
         </div>
       )}
 
       {/* Top POS Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white border border-teal-100 rounded-3xl shadow-card">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-primary text-white flex items-center justify-center font-black shadow-pill">
-            <span className="material-symbols-outlined text-[24px]">point_of_sale</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white border border-[#E2EBE8] rounded-[24px] shadow-sm">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-[#002F34] text-white flex items-center justify-center shadow-md shadow-[#002F34]/20">
+            <svg className="w-6 h-6 text-[#97D8D0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
           </div>
           <div>
-            <h1 className="text-base font-extrabold text-slate-900">Point of Sale Counter</h1>
-            <p className="text-[11px] font-medium text-slate-500">High-speed keyboard & touch billing terminal</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-bold text-[#002F34] tracking-tight">Point of Sale Counter</h1>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E7F6F3] text-[#007062] border border-[#C5E8E0]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00A887] ring-2 ring-[#00A887]/30"></span>
+                Fast Counter
+              </span>
+            </div>
+            <p className="text-[11px] text-[#5F7D7A] font-medium mt-0.5">High-speed barcode scanner & keyboard dispensing terminal</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
             onClick={() => {
               loadHeldBills();
               setShowHeldDrawer(true);
             }}
-            className="gap-2 font-bold"
+            className="px-4 py-2 bg-[#F4F7F6] hover:bg-[#E8F0ED] text-[#002F34] text-xs font-bold rounded-xl border border-[#D5E3DE] flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
           >
-            <span className="material-symbols-outlined text-[18px]">pause_circle</span>
-            Held Bills (F9)
+            <svg className="w-4 h-4 text-[#006059]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Held Bills (F9)</span>
             {heldBills.length > 0 && (
-              <span className="bg-primary text-white text-[10px] px-2 py-0.5 rounded-full font-mono font-black">
+              <span className="bg-[#002F34] text-white text-[10px] px-2 py-0.2 rounded-full font-mono font-bold">
                 {heldBills.length}
               </span>
             )}
-          </Button>
+          </button>
 
-          <Button
-            size="sm"
-            variant="outline"
+          <button
+            type="button"
             onClick={() => setShowHoldModal(true)}
             disabled={lines.length === 0}
-            className="gap-2 font-bold"
+            className="px-4 py-2 bg-white hover:bg-[#F4F7F6] text-[#5F7D7A] hover:text-[#002F34] text-xs font-bold rounded-xl border border-[#D5E3DE] flex items-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
           >
-            <span className="material-symbols-outlined text-[18px]">save</span>
-            Hold Cart (F8)
-          </Button>
+            <svg className="w-4 h-4 text-[#7A9894]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            <span>Hold Cart (F8)</span>
+          </button>
         </div>
       </div>
 
@@ -553,21 +577,36 @@ export const POS: React.FC = () => {
           <POSItemSearch onSelectItem={handleSelectItem} inputRef={searchInputRef} />
 
           {/* Customer Quick Info Bar */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-white border border-teal-100 rounded-3xl shadow-card">
-            <input
-              type="text"
-              placeholder="Customer Name (Optional)"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="h-10 px-4 bg-teal-50/40 border border-teal-100/80 rounded-2xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all"
-            />
-            <input
-              type="text"
-              placeholder="Customer Phone (Optional)"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              className="h-10 px-4 bg-teal-50/40 border border-teal-100/80 rounded-2xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15 transition-all font-mono"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-white border border-[#E2EBE8] rounded-[22px] shadow-sm">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7A9894]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Customer Name (Optional / Walk-in)"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="w-full h-10 pl-9 pr-3 bg-[#F8FAF9] border border-[#D5E3DE] rounded-xl text-xs font-semibold text-[#002F34] placeholder:text-[#8AA6A1] focus:bg-white focus:border-[#002F34] focus:outline-none transition-all shadow-2xs"
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7A9894]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Mobile 01XXXXXXXXX (Optional)"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="w-full h-10 pl-9 pr-3 bg-[#F8FAF9] border border-[#D5E3DE] rounded-xl text-xs font-semibold font-mono text-[#002F34] placeholder:text-[#8AA6A1] focus:bg-white focus:border-[#002F34] focus:outline-none transition-all shadow-2xs"
+              />
+            </div>
           </div>
 
           {/* Cart Table */}
@@ -584,100 +623,130 @@ export const POS: React.FC = () => {
 
         {/* Right Column (Summary & Checkout - 4 Cols) */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="p-6 bg-white border border-teal-100 rounded-4xl shadow-card space-y-5 sticky top-22">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                Payment Summary
-              </h2>
-              <span className="text-[11px] font-mono font-bold text-primary bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-full">
-                {lines.length} Items • {calculations.totalPieces} Pcs
+          <div className="p-6 bg-white border border-[#E2EBE8] rounded-[28px] shadow-sm space-y-5 sticky top-20">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[#EEF3F2] pb-3.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#00A887]"></span>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#002F34]">
+                  Payment Summary
+                </h2>
+              </div>
+              <span className="text-[11px] font-mono font-bold text-[#007062] bg-[#E1F6F0] border border-[#BCE8DD] px-2.5 py-0.5 rounded-full">
+                {lines.length} Items · {calculations.totalPieces} Pcs
               </span>
             </div>
 
-            {/* Live Amounts Breakdown */}
-            <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between text-slate-600 font-medium">
+            {/* Financial Calculations Breakdown */}
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between text-[#5F7D7A] font-medium">
                 <span>Subtotal Amount:</span>
-                <span className="font-mono font-bold text-slate-900 text-sm">
+                <span className="font-mono font-bold text-[#002F34] text-sm">
                   ৳ {calculations.subtotal}
                 </span>
               </div>
 
-              {/* Discount Input */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-slate-600 font-semibold">Special Discount (%):</span>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="100"
-                    value={discountPercent}
-                    onChange={(e) => setDiscountPercent(e.target.value)}
-                    className="w-16 h-8 text-right px-2.5 bg-teal-50/50 border border-teal-200 rounded-xl text-xs font-mono font-black text-slate-900 focus:bg-white focus:border-primary focus:outline-none"
-                  />
-                  <span className="text-slate-500 font-bold">%</span>
+              {/* Discount Input & Quick Pills */}
+              <div className="pt-2.5 border-t border-[#EEF3F2] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#002F34] font-bold">Special Discount (%):</span>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="100"
+                      value={discountPercent}
+                      onChange={(e) => setDiscountPercent(e.target.value)}
+                      className="w-16 h-8 text-right px-2 bg-[#F8FAF9] border border-[#D5E3DE] rounded-lg text-xs font-mono font-bold text-[#002F34] focus:bg-white focus:border-[#002F34] focus:outline-none"
+                    />
+                    <span className="text-[#5F7D7A] font-bold">%</span>
+                  </div>
+                </div>
+
+                {/* Quick Discount Presets */}
+                <div className="flex items-center gap-1.5 justify-end">
+                  {['0', '5', '7.5', '10'].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setDiscountPercent(d)}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded-md border transition-all cursor-pointer ${
+                        discountPercent === d
+                          ? 'bg-[#002F34] text-white border-[#002F34]'
+                          : 'bg-[#F8FAF9] text-[#5F7D7A] border-[#D5E3DE] hover:bg-[#E7F6F3]'
+                      }`}
+                    >
+                      {d}%
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {parseFloat(calculations.discountAmount) > 0 && (
-                <div className="flex justify-between text-emerald-800 font-semibold">
-                  <span>Discount Amount:</span>
+                <div className="flex justify-between text-[#007062] font-semibold">
+                  <span>Discount Saved:</span>
                   <span className="font-mono font-bold">- ৳ {calculations.discountAmount}</span>
                 </div>
               )}
 
               {/* Charges / VAT Breakdown */}
               {calculations.charges.map((ch, i) => (
-                <div key={i} className="flex justify-between text-slate-600 font-medium">
+                <div key={i} className="flex justify-between text-[#5F7D7A] font-medium">
                   <span>{ch.name}:</span>
-                  <span className="font-mono font-bold text-slate-900">+ ৳ {ch.amount}</span>
+                  <span className="font-mono font-bold text-[#002F34]">+ ৳ {ch.amount}</span>
                 </div>
               ))}
             </div>
 
-            {/* Grand Total Display */}
-            <div className="p-5 bg-gradient-to-br from-teal-50 via-teal-50/70 to-emerald-50 border-2 border-teal-200/80 rounded-3xl text-center space-y-1 shadow-inner">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-primary-800 block">
-                Grand Total Payable
+            {/* Grand Total Display Card */}
+            <div className="p-5 bg-[#F0FAF7] border border-[#CEE8E2] rounded-[22px] text-center space-y-1 shadow-2xs">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#006059] block">
+                Total Payable Amount
               </span>
-              <span className="text-3xl sm:text-4xl font-black font-mono text-slate-900 block tracking-tight">
-                ৳ {calculations.grandTotal}
-              </span>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-xl font-bold text-[#007062]">৳</span>
+                <span className="text-3xl sm:text-4xl font-black font-mono text-[#002F34] tracking-tight">
+                  {calculations.grandTotal}
+                </span>
+              </div>
             </div>
 
             {/* Proceed to Checkout Action */}
-            <Button
-              variant="primary"
-              size="lg"
+            <button
+              type="button"
               onClick={() => setShowPaymentModal(true)}
               disabled={lines.length === 0 || !isOnline}
-              className="w-full py-4 text-sm font-black shadow-pill hover:shadow-float gap-2 select-none"
+              className="w-full py-3.5 rounded-2xl bg-[#002F34] text-white text-sm font-bold shadow-lg shadow-[#002F34]/25 hover:bg-[#012428] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none"
             >
-              <span className="material-symbols-outlined text-[22px]">payments</span>
-              Pay & Checkout (F4)
-            </Button>
+              <svg className="w-5 h-5 text-[#97D8D0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Pay & Checkout (F4)</span>
+            </button>
 
-            {/* Keyboard Shortcuts Helper */}
-            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-[11px] text-slate-600 space-y-1.5">
-              <span className="font-bold text-slate-800 block uppercase tracking-wider text-[10px]">
-                Keyboard Shortcuts:
+            {/* Keyboard Shortcuts Helper Card */}
+            <div className="p-3.5 bg-[#F8FAF9] rounded-2xl border border-[#E8EFEA] text-[11px] text-[#5F7D7A] space-y-2">
+              <span className="font-bold text-[#002F34] block uppercase tracking-wider text-[10px]">
+                Keyboard Shortcuts
               </span>
-              <div className="flex justify-between">
-                <span>Focus Search:</span>
-                <kbd className="font-mono font-bold text-primary bg-white px-2 py-0.5 rounded border border-slate-200">F2</kbd>
-              </div>
-              <div className="flex justify-between">
-                <span>Proceed to Pay:</span>
-                <kbd className="font-mono font-bold text-primary bg-white px-2 py-0.5 rounded border border-slate-200">F4</kbd>
-              </div>
-              <div className="flex justify-between">
-                <span>Hold Current Bill:</span>
-                <kbd className="font-mono font-bold text-primary bg-white px-2 py-0.5 rounded border border-slate-200">F8</kbd>
-              </div>
-              <div className="flex justify-between">
-                <span>View Held Bills:</span>
-                <kbd className="font-mono font-bold text-primary bg-white px-2 py-0.5 rounded border border-slate-200">F9</kbd>
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
+                  <span>Search:</span>
+                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F2</kbd>
+                </div>
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
+                  <span>Pay:</span>
+                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F4</kbd>
+                </div>
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
+                  <span>Hold:</span>
+                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F8</kbd>
+                </div>
+                <div className="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-[#E2EBE8]">
+                  <span>Resume:</span>
+                  <kbd className="font-mono font-bold text-[#004D40] bg-[#E7F6F3] px-1.5 py-0.2 rounded border border-[#C5E8E0]">F9</kbd>
+                </div>
               </div>
             </div>
           </div>

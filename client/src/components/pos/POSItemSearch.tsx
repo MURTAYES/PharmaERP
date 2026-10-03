@@ -23,7 +23,7 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({ onSelectItem, inpu
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await searchItems(query, 10);
+        const res = await searchItems(query, 12);
         setResults(res.items);
         setSelectedIndex(0);
       } catch {
@@ -31,7 +31,7 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({ onSelectItem, inpu
       } finally {
         setSearching(false);
       }
-    }, 150);
+    }, 120);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -60,27 +60,47 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({ onSelectItem, inpu
   return (
     <div className="relative w-full">
       <div className="relative flex items-center">
-        <span className="material-symbols-outlined absolute left-4.5 text-primary text-[24px] pointer-events-none">
-          search
-        </span>
+        {/* Search Icon */}
+        <div className="absolute left-4.5 flex items-center pointer-events-none text-[#002F34]">
+          <svg className="w-5 h-5 text-[#006059]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
         <input
           ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Scan barcode or type medicine name / generic / code (Press 'F2' or '/' to focus)..."
-          className="w-full h-15 pl-13 pr-32 bg-white border-2 border-teal-100 hover:border-primary/40 focus:border-primary rounded-3xl text-slate-900 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-primary/15 transition-all shadow-card"
+          placeholder="Scan barcode or search medicine by brand, generic, or SKU (Press 'F2' or '/' to focus)..."
+          className="w-full h-14 pl-12 pr-32 bg-white border border-[#D5E3DE] hover:border-[#97D8D0] focus:border-[#002F34] rounded-2xl text-[#002F34] text-sm font-semibold placeholder:text-[#8AA6A1] focus:outline-none focus:ring-4 focus:ring-[#002F34]/10 transition-all shadow-xs"
         />
+
+        {/* Right Badges & Indicators */}
         <div className="absolute right-3.5 flex items-center gap-2">
-          {searching && (
-            <span className="animate-spin material-symbols-outlined text-[20px] text-primary">
-              progress_activity
-            </span>
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                setResults([]);
+              }}
+              className="w-6 h-6 rounded-full bg-[#E8F0ED] hover:bg-[#D5E3DE] text-[#5F7D7A] flex items-center justify-center transition-colors text-xs font-bold"
+            >
+              ✕
+            </button>
           )}
-          <kbd className="hidden sm:inline-flex items-center px-2.5 py-1 text-[11px] font-mono font-extrabold text-primary-800 bg-teal-50 border border-teal-200 rounded-xl">
-            F2 / Enter
-          </kbd>
+
+          {searching && (
+            <div className="w-5 h-5 border-2 border-[#00A887] border-t-transparent rounded-full animate-spin"></div>
+          )}
+
+          <div className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-mono font-bold text-[#004D40] bg-[#E7F6F3] border border-[#C5E8E0] rounded-xl">
+            <span>F2</span>
+            <span className="text-[#8AA6A1]">/</span>
+            <span>↵ Enter</span>
+          </div>
         </div>
       </div>
 
@@ -88,14 +108,20 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({ onSelectItem, inpu
       {results.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute top-17 left-0 right-0 z-50 bg-white border border-teal-100 rounded-3xl shadow-2xl overflow-hidden divide-y divide-slate-100 max-h-96 overflow-y-auto"
+          className="absolute top-16 left-0 right-0 z-50 bg-white border border-[#D5E3DE] rounded-2xl shadow-xl overflow-hidden divide-y divide-[#EEF3F2] max-h-96 overflow-y-auto custom-scrollbar"
         >
+          <div className="px-4 py-2 bg-[#F8FAF9] border-b border-[#E8EFEA] flex items-center justify-between text-[11px] font-bold text-[#5F7D7A] uppercase tracking-wider">
+            <span>Search Results ({results.length} found)</span>
+            <span className="text-[10px] text-[#8AA6A1] font-normal">Use ↑↓ arrows to navigate, Enter to select</span>
+          </div>
+
           {results.map((item, idx) => {
             const isSelected = idx === selectedIndex;
             const pcsPerStrip = item.unitHierarchy?.piecesPerStrip || 1;
             const stripsPerBox = item.unitHierarchy?.stripsPerBox || 1;
             const totalPcs = pcsPerStrip * stripsPerBox;
             const isOutOfStock = (item.totalSellablePieces || 0) <= 0;
+            const isLowStock = (item.totalSellablePieces || 0) > 0 && (item.totalSellablePieces || 0) <= (item.lowStockThresholdPieces || 20);
 
             return (
               <div
@@ -106,48 +132,55 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({ onSelectItem, inpu
                   setResults([]);
                 }}
                 onMouseEnter={() => setSelectedIndex(idx)}
-                className={`px-5 py-3.5 cursor-pointer flex items-center justify-between transition-colors ${
-                  isSelected ? 'bg-teal-50/80 font-bold' : 'hover:bg-slate-50'
-                } ${isOutOfStock ? 'opacity-70' : ''}`}
+                className={`px-4 py-3 cursor-pointer flex items-center justify-between transition-colors ${
+                  isSelected ? 'bg-[#F0FAF7] border-l-4 border-[#00A887]' : 'hover:bg-[#F8FAF9]'
+                } ${isOutOfStock ? 'opacity-60 bg-gray-50/50' : ''}`}
               >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-200/80 text-primary flex items-center justify-center font-black text-xs shadow-xs">
-                    {item.tradeName.slice(0, 2).toUpperCase()}
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono font-bold text-xs ${
+                    isSelected ? 'bg-[#002F34] text-white' : 'bg-[#E7F6F3] text-[#004D40] border border-[#C5E8E0]'
+                  }`}>
+                    {item.category ? item.category.slice(0, 2).toUpperCase() : 'MD'}
                   </div>
+
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-sm text-slate-900">{item.tradeName}</span>
-                      <span className="text-xs text-slate-500 font-medium">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-sm text-[#002F34]">{item.tradeName}</span>
+                      <span className="text-xs text-[#5F7D7A] font-medium">
                         ({item.genericName})
                       </span>
                       {item.shelfLocation && (
-                        <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-md font-mono text-slate-600 font-bold">
-                          Rack: {item.shelfLocation}
+                        <span className="text-[10px] bg-[#E8F0ED] px-2 py-0.5 rounded-full font-mono text-[#47635F] font-semibold border border-[#D5E3DE]">
+                          {item.shelfLocation}
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                    <div className="text-[11px] text-[#7A9894] flex items-center gap-2 mt-0.5">
                       <span>{item.manufacturer}</span>
                       <span>•</span>
                       <span>
-                        {pcsPerStrip} pcs/strip, {stripsPerBox} strips/box ({totalPcs} pcs/box)
+                        {pcsPerStrip} pcs/strip · {stripsPerBox} strips/box ({totalPcs} pcs total)
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-right flex flex-col items-end">
-                  <span className="text-sm font-mono font-black text-slate-900">
-                    ৳ {parseFloat(item.mrpPerPiece).toFixed(2)} <span className="text-xs font-medium text-slate-400">/ pc</span>
+                <div className="text-right flex flex-col items-end shrink-0 pl-3">
+                  <span className="text-sm font-mono font-bold text-[#002F34]">
+                    ৳ {parseFloat(item.mrpPerPiece.toString()).toFixed(2)} <span className="text-[11px] font-normal text-[#7A9894]">/ pc</span>
                   </span>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {isOutOfStock ? (
-                      <span className="text-[10px] font-extrabold text-red-800 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
                         Out of Stock
                       </span>
+                    ) : isLowStock ? (
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                        {item.totalSellablePieces} pcs (Low)
+                      </span>
                     ) : (
-                      <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                        {item.totalSellablePieces} pcs in stock
+                      <span className="text-[10px] font-bold text-[#007062] bg-[#E7F6F3] border border-[#C5E8E0] px-2 py-0.5 rounded-full">
+                        {item.totalSellablePieces} pcs available
                       </span>
                     )}
                   </div>
