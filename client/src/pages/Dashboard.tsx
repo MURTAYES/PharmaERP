@@ -7,7 +7,7 @@ import { getAlertSummary, getExpiringBatches, getLowStockItems } from '../servic
 import { getHeldBills, getInvoices } from '../services/posApi.ts';
 
 export function Dashboard() {
-  const { user, role } = useAuth();
+  const { role } = useAuth();
   const isOwner = role === 'owner';
   const [dateFilter, setDateFilter] = useState('Today');
 
@@ -71,45 +71,11 @@ export function Dashboard() {
   if (!isOwner) {
     return (
       <div className="space-y-7 max-w-[1440px] w-full mx-auto text-left">
-        {/* Pharmacist Station Hero Banner */}
-        <div className="bg-gradient-to-r from-[#002F34] to-[#014249] rounded-[32px] p-6 sm:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-          {/* Subtle Ambient Background Orbs */}
-          <div className="absolute -right-16 -top-16 w-64 h-64 bg-[#97D8D0]/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-[#D7F1B5]/15 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#D7F1B5] text-[#002F34]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#002F34] animate-ping" />
-                Terminal Ready
-              </span>
-              <span className="text-xs font-semibold text-slate-300">
-                Shift: {user?.fullName || 'Pharmacist'}
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Clinical Dispensing Station
-            </h1>
-            <p className="text-xs text-slate-300 max-w-xl">
-              Track real-time counter fulfillment, FEFO batch expiry alerts, low stock reorders, and pending customer bills.
-            </p>
-          </div>
-
-          <div className="relative z-10 flex flex-wrap items-center gap-3">
-            <Link
-              to="/pos"
-              className="px-6 py-3.5 rounded-full bg-[#97D8D0] hover:bg-[#85c7bf] text-[#002F34] font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg transition-transform active:scale-95"
-            >
-              <span className="material-symbols-outlined text-[20px]">point_of_sale</span>
-              <span>Open POS Billing (F2)</span>
-            </Link>
-            <Link
-              to="/inventory"
-              className="px-5 py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 flex items-center gap-2 backdrop-blur-md transition-colors"
-            >
-              <span className="material-symbols-outlined text-[18px]">medication</span>
-              <span>Medicine Finder (F3)</span>
-            </Link>
+        {/* Title Header Row */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#002F34]">Clinical Dispensing Overview</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Welcome back, monitor your counter fulfillment and batch expiry alerts.</p>
           </div>
         </div>
 
