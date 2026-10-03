@@ -9,13 +9,21 @@ export function Sidebar() {
   return (
     <aside className="w-64 bg-white border-r border-[#E8F0ED] flex flex-col justify-between p-5 shrink-0 min-h-screen sticky top-0 h-screen overflow-y-auto custom-scrollbar">
       <div className="space-y-6">
-        {/* Brand Logo Header - Clean, No Dark Box */}
-        <div className="flex items-center space-x-3 px-1.5 py-1">
+        {/* Brand Logo Header */}
+        <div className="flex items-center space-x-2.5 px-1.5 py-1">
           <img
             src="/logo.png"
             alt="PharmaERP Logo"
-            className="h-9 w-auto max-w-[130px] object-contain shrink-0"
+            className="h-8 w-8 object-contain shrink-0"
           />
+          <div className="flex flex-col">
+            <span className="font-extrabold text-lg tracking-tight text-[#002F34] leading-none">
+              Pharma<span className="text-[#00A887]">ERP</span>
+            </span>
+            <span className="text-[10px] font-semibold text-[#5F7D7A] tracking-wider uppercase mt-0.5">
+              Pharmacy Suite
+            </span>
+          </div>
         </div>
 
         {/* Navigation Menus */}
