@@ -1,15 +1,12 @@
 import Decimal from 'decimal.js';
 
-// Configure Decimal.js precision defaults
-Decimal.set({ precision: 20, rounding: Decimal.ROUND_HALF_UP });
-
 export interface UnitHierarchy {
   piecesPerStrip: number;
   stripsPerBox: number;
 }
 
 export interface LineItemInput {
-  unitPrice: string | number | Decimal;
+  unitPrice: string | number;
   quantity: number;
   unit: 'piece' | 'strip' | 'box';
   unitHierarchy: UnitHierarchy;
@@ -26,7 +23,7 @@ export interface CalculatedLineItem {
 export interface ChargeInput {
   name: string;
   type: 'percentage' | 'fixed';
-  rate: string | number | Decimal;
+  rate: string | number;
   isActive?: boolean;
 }
 
@@ -91,8 +88,8 @@ export function calculateLineItem(input: LineItemInput): CalculatedLineItem {
  * Computes subtotal, discount, global charges, and 2dp round-half-up grand total.
  */
 export function calculateInvoiceTotals(
-  lines: Array<{ lineTotal: string | number | Decimal }>,
-  discountPercentInput: string | number | Decimal = 0,
+  lines: Array<{ lineTotal: string | number }>,
+  discountPercentInput: string | number = 0,
   chargesInput: ChargeInput[] = []
 ): CalculatedInvoiceTotals {
   let subtotalDec = new Decimal(0);
@@ -154,8 +151,8 @@ export function calculateInvoiceTotals(
  * Calculates change due for cash payments.
  */
 export function calculateChangeDue(
-  grandTotalInput: string | number | Decimal,
-  tenderedInput: string | number | Decimal
+  grandTotalInput: string | number,
+  tenderedInput: string | number
 ): { changeDue: string; isSufficient: boolean; balanceRemaining: string } {
   const grandTotalDec = new Decimal(grandTotalInput || 0);
   const tenderedDec = new Decimal(tenderedInput || 0);

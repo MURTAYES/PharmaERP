@@ -37,6 +37,7 @@ export async function getNextSequence(
     { $inc: { seq: 1 } },
     options
   );
-  const numStr = String(counter.seq).padStart(padLength, '0');
+  const seq = counter ? counter.seq : 1;
+  const numStr = String(seq).padStart(padLength, '0');
   return `${prefix}-${numStr}`;
 }

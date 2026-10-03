@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Decimal from 'decimal.js';
 import { Item, Batch, Invoice, HeldBill } from '../types';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings } from '../context/SettingsContext.tsx';
 import {
   getBatchesForItem,
   checkout,

@@ -40,3 +40,5 @@ export function authMiddleware(req: AuthenticatedRequest, res: Response, next: N
 }
 
 export const authenticate = authMiddleware;
+export const requireAuth = authMiddleware;
+

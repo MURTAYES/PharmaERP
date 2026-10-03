@@ -94,7 +94,7 @@ export async function checkout(req: AuthenticatedRequest, res: Response): Promis
 
   // Retrieve global pharmacy settings for active invoice charges
   const settings = await Settings.findOne();
-  const activeCharges = settings?.invoiceCharges?.filter((c) => c.isActive) || [];
+  const activeCharges = settings?.charges?.filter((c) => c.isActive) || [];
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -217,7 +217,7 @@ export async function checkout(req: AuthenticatedRequest, res: Response): Promis
             qtyChangePieces: -calculatedLine.quantityPieces,
             bucketFrom: 'sellable',
             reasonDetail: `POS Invoice checkout: ${calculatedLine.quantity} ${reqLine.unit}(s)`,
-            userId: req.user!._id,
+            userId: new Types.ObjectId(req.user!.userId),
             timestamp: new Date(),
           },
         ],
@@ -229,7 +229,7 @@ export async function checkout(req: AuthenticatedRequest, res: Response): Promis
     const calculatedTotals = calculateInvoiceTotals(
       invoiceLines.map((l) => ({ lineTotal: l.lineTotal.toString() })),
       discountPercent,
-      activeCharges.map((c) => ({
+      activeCharges.map((c: any) => ({
         name: c.name,
         type: c.type,
         rate: c.rate.toString(),
@@ -274,7 +274,7 @@ export async function checkout(req: AuthenticatedRequest, res: Response): Promis
       [
         {
           invoiceNumber,
-          billedBy: req.user!._id,
+          billedBy: new Types.ObjectId(req.user!.userId),
           billedByName: req.user!.username,
           customerName: customerName?.trim() || undefined,
           customerPhone: customerPhone?.trim() || undefined,
@@ -307,7 +307,7 @@ export async function checkout(req: AuthenticatedRequest, res: Response): Promis
             action: 'PRICE_OVERRIDE',
             entity: 'Invoice',
             entityId: createdInvoice._id,
-            userId: req.user!._id,
+            userId: new Types.ObjectId(req.user!.userId),
             username: req.user!.username,
             details: {
               invoiceNumber,

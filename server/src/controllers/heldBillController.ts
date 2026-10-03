@@ -57,7 +57,7 @@ export async function saveHeldBill(req: AuthenticatedRequest, res: Response): Pr
 
     const heldBill = await HeldBill.create({
       billReference,
-      heldBy: req.user!._id,
+      heldBy: new Types.ObjectId(req.user!.userId),
       heldByName: req.user!.username,
       customerName: customerName?.trim() || undefined,
       customerPhone: customerPhone?.trim() || undefined,

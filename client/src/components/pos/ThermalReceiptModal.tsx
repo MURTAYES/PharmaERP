@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Invoice } from '../../types';
-import { useSettings } from '../../context/SettingsContext';
+import { useSettings } from '../../context/SettingsContext.tsx';
 
 interface ThermalReceiptModalProps {
   isOpen: boolean;
