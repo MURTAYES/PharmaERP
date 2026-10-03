@@ -24,10 +24,23 @@ export const Inventory: React.FC = () => {
   >('all');
   const [alertSummary, setAlertSummary] = useState<AlertSummary | null>(null);
 
-  // Pagination
+  // Pagination & Sorting State
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState<number>(15);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [sortBy, setSortBy] = useState<'name' | 'generic' | 'stock' | 'mrp' | 'createdAt'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (field: 'name' | 'generic' | 'stock' | 'mrp' | 'createdAt') => {
+    if (sortBy === field) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortOrder(field === 'stock' ? 'desc' : 'asc');
+    }
+    setPage(1);
+  };
 
   // Selected item batches for expanded drawer view
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
@@ -94,9 +107,11 @@ export const Inventory: React.FC = () => {
       } else {
         const res = await getItems({
           page,
-          limit: 15,
+          limit,
           search: search.trim() || undefined,
           category: category || undefined,
+          sortBy,
+          sortOrder,
         });
         setItems(res.items);
         setTotalPages(res.pagination.pages);
@@ -107,7 +122,7 @@ export const Inventory: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search, category, activeAlertFilter]);
+  }, [page, limit, search, category, activeAlertFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     loadData();
@@ -507,25 +522,40 @@ export const Inventory: React.FC = () => {
       {/* BEGIN: ProductsListTableSection */}
       <section aria-label="Main Products Inventory Table" className="bg-white rounded-3xl p-6 border border-[#E7EFF0] shadow-card flex flex-col gap-5">
         {/* Table Toolbar & Filters */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-[#052C28]">Products List</h2>
             <p className="text-xs text-[#7B8F8C]">Detailed inventory stock counts, lot numbers, and batch tracking</p>
           </div>
 
-          {/* Controls: Search & Category Filter */}
+          {/* Controls: Search, Category, Sorting, and Page Size */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <input
-              type="text"
-              placeholder="Search by trade name, generic, SKU..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="bg-[#F3F7F6] border-none text-xs rounded-full py-1.5 pl-4 pr-4 w-60 focus:ring-1 focus:ring-[#002F34] text-[#002F34] placeholder-slate-400"
-            />
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search name, generic, SKU..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="bg-[#F3F7F6] border-none text-xs rounded-full py-1.5 pl-4 pr-8 w-56 focus:ring-1 focus:ring-[#002F34] text-[#002F34] placeholder-slate-400 font-medium"
+              />
+              {search && (
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setPage(1);
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
 
+            {/* Category Filter */}
             <select
               value={category}
               onChange={(e) => {
@@ -541,6 +571,51 @@ export const Inventory: React.FC = () => {
                 </option>
               ))}
             </select>
+
+            {/* Sort Selector Dropdown */}
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [newSort, newOrder] = e.target.value.split('-') as [
+                  'name' | 'generic' | 'stock' | 'mrp' | 'createdAt',
+                  'asc' | 'desc'
+                ];
+                setSortBy(newSort);
+                setSortOrder(newOrder);
+                setPage(1);
+              }}
+              className="bg-[#F3F7F6] border-none text-xs rounded-full py-1.5 px-3 focus:ring-1 focus:ring-[#002F34] text-[#002F34] font-medium cursor-pointer"
+            >
+              <option value="name-asc">Sort: Name (A → Z)</option>
+              <option value="name-desc">Sort: Name (Z → A)</option>
+              <option value="generic-asc">Sort: Generic (A → Z)</option>
+              <option value="generic-desc">Sort: Generic (Z → A)</option>
+              <option value="stock-desc">Sort: Stock (Highest First)</option>
+              <option value="stock-asc">Sort: Stock (Lowest First)</option>
+              <option value="mrp-desc">Sort: Price (High → Low)</option>
+              <option value="mrp-asc">Sort: Price (Low → High)</option>
+            </select>
+
+            {/* Rows Per Page Pill Switcher (15, 50, 100) */}
+            <div className="flex items-center bg-[#F3F7F6] p-0.5 rounded-full border border-[#E7EFF0]">
+              {[15, 50, 100].map((pageSize) => (
+                <button
+                  key={pageSize}
+                  type="button"
+                  onClick={() => {
+                    setLimit(pageSize);
+                    setPage(1);
+                  }}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-all cursor-pointer ${
+                    limit === pageSize
+                      ? 'bg-[#002F34] text-white shadow-xs'
+                      : 'text-[#617774] hover:text-[#002F34]'
+                  }`}
+                >
+                  {pageSize}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -548,11 +623,52 @@ export const Inventory: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#EAF0F0] text-[11px] font-semibold text-[#809491] uppercase tracking-wider">
-                <th className="py-3 px-3">Product Name & Generic</th>
-                <th className="py-3 px-3">Category</th>
+              <tr className="border-b border-[#EAF0F0] text-[11px] font-semibold text-[#809491] uppercase tracking-wider select-none">
+                <th
+                  onClick={() => handleSort('name')}
+                  className="py-3 px-3 cursor-pointer hover:text-[#002F34] transition-colors"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Product Name & SKU</span>
+                    {sortBy === 'name' && (
+                      <span className="text-[#148370] font-bold text-xs">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('generic')}
+                  className="py-3 px-3 cursor-pointer hover:text-[#002F34] transition-colors"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Generic & Category</span>
+                    {sortBy === 'generic' && (
+                      <span className="text-[#148370] font-bold text-xs">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('stock')}
+                  className="py-3 px-3 cursor-pointer hover:text-[#002F34] transition-colors text-center"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Stock & Batches</span>
+                    {sortBy === 'stock' && (
+                      <span className="text-[#148370] font-bold text-xs">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
                 <th className="py-3 px-3 text-center">Unit Hierarchy</th>
-                <th className="py-3 px-3 text-right">MRP (Piece)</th>
+                <th
+                  onClick={() => handleSort('mrp')}
+                  className="py-3 px-3 cursor-pointer hover:text-[#002F34] transition-colors text-right"
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span>MRP (Piece)</span>
+                    {sortBy === 'mrp' && (
+                      <span className="text-[#148370] font-bold text-xs">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
+                </th>
                 <th className="py-3 px-3 text-center">Status</th>
                 <th className="py-3 px-3 text-right">Actions</th>
               </tr>
@@ -560,13 +676,19 @@ export const Inventory: React.FC = () => {
             <tbody className="divide-y divide-[#F2F7F6] text-xs">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    Loading inventory catalog...
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <div className="inline-flex items-center gap-2">
+                      <svg className="w-4 h-4 animate-spin text-[#1CA890]" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      <span>Loading inventory catalog...</span>
+                    </div>
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
                     No medicine products found matching criteria.
                   </td>
                 </tr>
@@ -574,6 +696,7 @@ export const Inventory: React.FC = () => {
                 items.map((item, idx) => {
                   const badge = getInitialsBadge(item.tradeName, idx);
                   const isExpanded = expandedItemId === item._id;
+                  const totalSellable = item.totalSellablePieces ?? 0;
 
                   return (
                     <React.Fragment key={item._id}>
@@ -588,17 +711,47 @@ export const Inventory: React.FC = () => {
                                 {item.tradeName}
                               </div>
                               <div className="text-[10px] text-[#849693]">
-                                {item.genericName} • SKU: {item.itemCode}
+                                SKU: {item.itemCode}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3.5 px-3 text-[#4F6461] font-medium">{item.category || 'General'}</td>
+                        <td className="py-3.5 px-3">
+                          <div className="font-medium text-[#0D2F2B]">{item.genericName}</div>
+                          <div className="text-[10px] text-[#7E9390]">
+                            {item.category || 'General'} • {item.manufacturer}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3 text-center">
+                          <div className="font-bold text-[#0D2F2B]">
+                            {totalSellable} pcs
+                          </div>
+                          <div className="mt-0.5">
+                            {totalSellable === 0 ? (
+                              <span className="text-[9px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                                Out of Stock
+                              </span>
+                            ) : item.isLowStock ? (
+                              <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                                Low Stock
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                                In Stock
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="py-3.5 px-3 text-center text-slate-600">
                           1 box = {item.unitHierarchy.stripsPerBox} strips ({item.unitHierarchy.piecesPerStrip * item.unitHierarchy.stripsPerBox} pcs)
                         </td>
                         <td className="py-3.5 px-3 text-right font-bold text-[#0F2D29]">
-                          ৳ {parseFloat(item.mrpPerPiece).toFixed(2)}
+                          <div>৳ {parseFloat(item.mrpPerPiece).toFixed(2)}</div>
+                          {item.stripPrice && (
+                            <div className="text-[10px] text-slate-400 font-normal">
+                              ৳ {item.stripPrice}/strip
+                            </div>
+                          )}
                         </td>
                         <td className="py-3.5 px-3 text-center">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
@@ -653,7 +806,7 @@ export const Inventory: React.FC = () => {
                       {/* Batches Expanded Accordion Row */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={6} className="bg-slate-50 p-4 border-y border-slate-200">
+                          <td colSpan={7} className="bg-slate-50 p-4 border-y border-slate-200">
                             <div className="flex flex-col gap-2">
                               <div className="flex items-center justify-between">
                                 <span className="font-bold text-xs text-[#002F34]">
@@ -731,17 +884,31 @@ export const Inventory: React.FC = () => {
           </table>
         </div>
 
-        {/* Table Pagination */}
+        {/* Table Pagination & Range Indicator */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#EEF4F3] text-xs text-[#7B8E8B]">
           <div className="flex items-center gap-2">
             <span>Showing</span>
-            <span className="font-bold text-[#0D302C]">{(page - 1) * 15 + 1} to {Math.min(page * 15, totalItems)}</span>
+            <span className="font-bold text-[#0D302C]">
+              {totalItems === 0 ? 0 : (page - 1) * limit + 1} to {Math.min(page * limit, totalItems)}
+            </span>
             <span>of</span>
-            <span className="font-bold text-[#0D302C]">{totalItems}</span>
+            <span className="font-bold text-[#0D302C]">{totalItems.toLocaleString()}</span>
             <span>products</span>
+            <span className="text-slate-300">|</span>
+            <span className="text-[11px]">Page {page} of {totalPages || 1}</span>
           </div>
 
           <div className="flex items-center gap-1.5 self-center">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage(1)}
+              title="First Page"
+              className="px-2.5 h-8 rounded-full border border-[#DCE6E5] flex items-center justify-center hover:bg-[#F2F7F6] text-[#556966] text-xs font-semibold transition-colors disabled:opacity-40 cursor-pointer"
+              type="button"
+            >
+              First
+            </button>
+
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -753,20 +920,29 @@ export const Inventory: React.FC = () => {
               </svg>
             </button>
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5).map((pNum) => (
-              <button
-                key={pNum}
-                onClick={() => setPage(pNum)}
-                className={`w-8 h-8 rounded-full font-bold flex items-center justify-center transition-colors cursor-pointer ${
-                  pNum === page
-                    ? 'bg-[#032B2F] text-white shadow-sm'
-                    : 'border border-transparent hover:border-[#DCE6E5] text-[#556966] hover:bg-[#F2F7F6]'
-                }`}
-                type="button"
-              >
-                {pNum}
-              </button>
-            ))}
+            {/* Smart pagination numbers window around current page */}
+            {(() => {
+              const pages: number[] = [];
+              const start = Math.max(1, page - 2);
+              const end = Math.min(totalPages, page + 2);
+              for (let i = start; i <= end; i++) {
+                pages.push(i);
+              }
+              return pages.map((pNum) => (
+                <button
+                  key={pNum}
+                  onClick={() => setPage(pNum)}
+                  className={`w-8 h-8 rounded-full font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                    pNum === page
+                      ? 'bg-[#032B2F] text-white shadow-sm'
+                      : 'border border-transparent hover:border-[#DCE6E5] text-[#556966] hover:bg-[#F2F7F6]'
+                  }`}
+                  type="button"
+                >
+                  {pNum}
+                </button>
+              ));
+            })()}
 
             <button
               disabled={page >= totalPages}
@@ -777,6 +953,16 @@ export const Inventory: React.FC = () => {
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
               </svg>
+            </button>
+
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage(totalPages)}
+              title="Last Page"
+              className="px-2.5 h-8 rounded-full border border-[#DCE6E5] flex items-center justify-center hover:bg-[#F2F7F6] text-[#556966] text-xs font-semibold transition-colors disabled:opacity-40 cursor-pointer"
+              type="button"
+            >
+              Last
             </button>
           </div>
         </div>

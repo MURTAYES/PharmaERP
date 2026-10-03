@@ -7,6 +7,8 @@ export interface GetItemsParams {
   search?: string;
   category?: string;
   isActive?: boolean;
+  sortBy?: 'name' | 'generic' | 'stock' | 'mrp' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface GetItemsResponse {

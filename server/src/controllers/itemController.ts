@@ -44,11 +44,13 @@ export const updateItemSchema = createItemSchema.partial();
  */
 export async function getItems(req: Request, res: Response): Promise<void> {
   try {
-    const page = parseInt(req.query.page as string, 10) || 1;
-    const limit = parseInt(req.query.limit as string, 10) || 20;
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 15));
     const search = (req.query.search as string)?.trim();
     const category = (req.query.category as string)?.trim();
     const activeFilter = req.query.isActive;
+    const sortBy = (req.query.sortBy as string)?.toLowerCase() || 'name';
+    const sortOrder = (req.query.sortOrder as string)?.toLowerCase() === 'desc' ? -1 : 1;
 
     const query: Record<string, any> = {};
 
@@ -71,51 +73,122 @@ export async function getItems(req: Request, res: Response): Promise<void> {
     }
 
     const total = await Item.countDocuments(query);
-    const items = await Item.find(query)
-      .sort({ tradeName: 1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
 
-    // Fetch batch aggregations for total sellable stock per item
-    const itemIds = items.map((i: any) => i._id);
-    const batchAggregates = await Batch.aggregate([
-      { $match: { itemId: { $in: itemIds } } },
-      {
-        $group: {
-          _id: '$itemId',
-          totalSellablePieces: { $sum: '$qtySellable' },
-          totalDamagedPieces: { $sum: '$qtyDamaged' },
-          totalExpiredPieces: { $sum: '$qtyExpired' },
-          batchCount: { $sum: 1 },
-          earliestExpiry: { $min: '$expiryDate' },
+    let enrichedItems: any[] = [];
+
+    if (sortBy === 'stock') {
+      // Stock-based sorting requires aggregating batches first
+      const pipeline: any[] = [
+        { $match: query },
+        {
+          $lookup: {
+            from: 'batches',
+            localField: '_id',
+            foreignField: 'itemId',
+            as: 'batches',
+          },
         },
-      },
-    ]);
+        {
+          $addFields: {
+            totalSellablePieces: { $sum: '$batches.qtySellable' },
+            totalDamagedPieces: { $sum: '$batches.qtyDamaged' },
+            totalExpiredPieces: { $sum: '$batches.qtyExpired' },
+            batchCount: { $size: '$batches' },
+            earliestExpiry: { $min: '$batches.expiryDate' },
+          },
+        },
+        {
+          $sort: {
+            totalSellablePieces: sortOrder,
+            tradeName: 1,
+          },
+        },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      ];
 
-    const aggregateMap = new Map<string, any>();
-    batchAggregates.forEach((agg: any) => {
-      aggregateMap.set(agg._id.toString(), agg);
-    });
+      const rawAggItems = await Item.aggregate(pipeline);
 
-    const enrichedItems = items.map((item: any) => {
-      const json = item.toJSON();
-      const agg = aggregateMap.get(item._id.toString()) || {
-        totalSellablePieces: 0,
-        totalDamagedPieces: 0,
-        totalExpiredPieces: 0,
-        batchCount: 0,
-        earliestExpiry: null,
-      };
-      return {
-        ...json,
-        totalSellablePieces: agg.totalSellablePieces,
-        totalDamagedPieces: agg.totalDamagedPieces,
-        totalExpiredPieces: agg.totalExpiredPieces,
-        batchCount: agg.batchCount,
-        earliestExpiry: agg.earliestExpiry,
-        isLowStock: agg.totalSellablePieces >= 5 && agg.totalSellablePieces <= item.lowStockThresholdPieces,
-      };
-    });
+      enrichedItems = rawAggItems.map((item: any) => {
+        const pieceMRP = new Decimal(item.mrpPerPiece ? item.mrpPerPiece.toString() : '0');
+        const pcsPerStrip = item.unitHierarchy?.piecesPerStrip || 1;
+        const stripsPerBox = item.unitHierarchy?.stripsPerBox || 1;
+        const totalPcsBox = pcsPerStrip * stripsPerBox;
+
+        return {
+          ...item,
+          mrpPerPiece: pieceMRP.toFixed(2),
+          stripPrice: pieceMRP.times(pcsPerStrip).toFixed(2),
+          boxPrice: pieceMRP.times(totalPcsBox).toFixed(2),
+          totalPiecesPerBox: totalPcsBox,
+          isLowStock:
+            item.totalSellablePieces >= 5 &&
+            item.totalSellablePieces <= (item.lowStockThresholdPieces || 20),
+        };
+      });
+    } else {
+      // Standard database field sorting
+      const sortOptions: Record<string, 1 | -1> = {};
+      if (sortBy === 'generic') {
+        sortOptions.genericName = sortOrder;
+        sortOptions.tradeName = 1;
+      } else if (sortBy === 'mrp') {
+        sortOptions.mrpPerPiece = sortOrder;
+      } else if (sortBy === 'createdat') {
+        sortOptions.createdAt = sortOrder;
+      } else {
+        // default: name
+        sortOptions.tradeName = sortOrder;
+      }
+
+      const items = await Item.find(query)
+        .sort(sortOptions)
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+      // Fetch batch aggregations for total sellable stock per item
+      const itemIds = items.map((i: any) => i._id);
+      const batchAggregates = await Batch.aggregate([
+        { $match: { itemId: { $in: itemIds } } },
+        {
+          $group: {
+            _id: '$itemId',
+            totalSellablePieces: { $sum: '$qtySellable' },
+            totalDamagedPieces: { $sum: '$qtyDamaged' },
+            totalExpiredPieces: { $sum: '$qtyExpired' },
+            batchCount: { $sum: 1 },
+            earliestExpiry: { $min: '$expiryDate' },
+          },
+        },
+      ]);
+
+      const aggregateMap = new Map<string, any>();
+      batchAggregates.forEach((agg: any) => {
+        aggregateMap.set(agg._id.toString(), agg);
+      });
+
+      enrichedItems = items.map((item: any) => {
+        const json = item.toJSON();
+        const agg = aggregateMap.get(item._id.toString()) || {
+          totalSellablePieces: 0,
+          totalDamagedPieces: 0,
+          totalExpiredPieces: 0,
+          batchCount: 0,
+          earliestExpiry: null,
+        };
+        return {
+          ...json,
+          totalSellablePieces: agg.totalSellablePieces,
+          totalDamagedPieces: agg.totalDamagedPieces,
+          totalExpiredPieces: agg.totalExpiredPieces,
+          batchCount: agg.batchCount,
+          earliestExpiry: agg.earliestExpiry,
+          isLowStock:
+            agg.totalSellablePieces >= 5 &&
+            agg.totalSellablePieces <= item.lowStockThresholdPieces,
+        };
+      });
+    }
 
     res.json({
       items: enrichedItems,
