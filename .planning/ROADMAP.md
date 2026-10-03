@@ -29,7 +29,7 @@ PharmaERP is delivered in vertical end-to-end MVP slices. Each phase delivers a 
   2. Owner can access full admin capabilities, create users, and configure pharmacy profile/receipt/charge settings via the UI.
   3. Pharmacist user interface and API responses completely omit purchase price, cost, profit, and valuation data.
   4. System captures authentication, user changes, and settings modifications in an append-only audit log.
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 01-01: Fullstack project setup, MongoDB Atlas connection, JWT auth system, and RBAC with field-stripping serializer middleware
