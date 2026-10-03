@@ -49,22 +49,23 @@ export const BatchCostModal: React.FC<BatchCostModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Update Batch Purchase Cost" maxWidth="sm">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-left">
         {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-lg">
-            {error}
+          <div className="p-3 bg-error-container text-on-error-container text-xs font-semibold rounded-xl flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">error</span>
+            <span>{error}</span>
           </div>
         )}
 
-        <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-lg text-xs space-y-1">
-          <div className="font-semibold text-slate-200">{item.tradeName}</div>
-          <div className="text-slate-400">
-            Batch: <span className="font-mono text-teal-400 font-bold">{batch.batchNumber}</span>
+        <div className="p-3 bg-surface-container-low border border-surface-container rounded-xl text-xs space-y-1">
+          <div className="font-bold text-on-surface">{item.tradeName}</div>
+          <div className="text-on-surface-variant">
+            Batch: <span className="font-mono text-primary font-bold">{batch.batchNumber}</span>
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
             Unit For Entered Cost
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -73,10 +74,10 @@ export const BatchCostModal: React.FC<BatchCostModalProps> = ({
                 key={u}
                 type="button"
                 onClick={() => setUnit(u)}
-                className={`py-1.5 px-2 text-xs font-semibold rounded-lg border transition-all capitalize ${
+                className={`py-2 px-2 text-xs font-bold rounded-xl border transition-all capitalize cursor-pointer ${
                   unit === u
-                    ? 'bg-teal-600 text-white border-teal-500'
-                    : 'bg-slate-900/80 text-slate-400 border-slate-700'
+                    ? 'bg-primary text-on-primary border-primary shadow-sm'
+                    : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30 hover:bg-surface-container'
                 }`}
               >
                 {u}
@@ -97,7 +98,7 @@ export const BatchCostModal: React.FC<BatchCostModalProps> = ({
           autoFocus
         />
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

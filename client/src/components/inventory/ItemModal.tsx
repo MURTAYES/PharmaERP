@@ -127,10 +127,11 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       title={itemToEdit ? 'Edit Medicine Master' : 'Add New Medicine'}
       maxWidth="lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-left">
         {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-lg">
-            {error}
+          <div className="p-3 bg-error-container text-on-error-container text-xs font-semibold rounded-xl flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">error</span>
+            <span>{error}</span>
           </div>
         )}
 
@@ -154,14 +155,14 @@ export const ItemModal: React.FC<ItemModalProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
               Category
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700/60 rounded-lg text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full h-11 px-3 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -188,12 +189,13 @@ export const ItemModal: React.FC<ItemModalProps> = ({
         </div>
 
         {/* Unit Hierarchy & Packaging */}
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-xl space-y-3">
+        <div className="p-4 bg-surface-container-low rounded-2xl border border-surface-container space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-teal-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px]">inventory</span>
               Unit Conversion Hierarchy
             </span>
-            <span className="text-xs text-slate-400">Base Unit: Piece (Tablet / Capsule)</span>
+            <span className="text-xs text-on-surface-variant font-medium">Base Unit: Piece (Tablet / Capsule)</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -227,16 +229,16 @@ export const ItemModal: React.FC<ItemModalProps> = ({
           </div>
 
           {/* Derived Price Live Banner */}
-          <div className="p-2.5 bg-teal-950/40 border border-teal-500/30 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-teal-300">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-300">Live Derived Pricing:</span>
-              <span>Unit Price: ৳ {parseFloat(mrpPerPiece || '0').toFixed(2)}</span>
-              <span className="text-slate-500">|</span>
-              <span>Strip Price: ৳ {stripPrice}</span>
-              <span className="text-slate-500">|</span>
-              <span>Box Price: ৳ {boxPrice}</span>
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-emerald-900">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-emerald-950">Live Packaging Pricing:</span>
+              <span>Unit: ৳ {parseFloat(mrpPerPiece || '0').toFixed(2)}</span>
+              <span className="text-emerald-400">|</span>
+              <span className="font-semibold">Strip: ৳ {stripPrice}</span>
+              <span className="text-emerald-400">|</span>
+              <span className="font-bold">Box: ৳ {boxPrice}</span>
             </div>
-            <span className="text-slate-400">
+            <span className="text-emerald-700 text-[11px]">
               ({stripsPerBox} strips × {piecesPerStrip} pcs = {totalPiecesBox} pcs / box)
             </span>
           </div>
@@ -253,7 +255,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
           />
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

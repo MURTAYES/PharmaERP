@@ -139,24 +139,25 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Stock Receiving & Batch Ingestion" maxWidth="lg">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-left">
         {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-lg">
-            {error}
+          <div className="p-3 bg-error-container text-on-error-container text-xs font-semibold rounded-xl flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">error</span>
+            <span>{error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm rounded-lg flex items-center gap-2">
-            <span className="material-symbols-outlined text-lg">check_circle</span>
-            {successMsg}
+          <div className="p-3 bg-emerald-100 text-emerald-900 text-xs font-semibold rounded-xl flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-emerald-700">check_circle</span>
+            <span>{successMsg}</span>
           </div>
         )}
 
         {/* Item Selector / Typeahead */}
-        <div className="relative">
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-            Select Medicine <span className="text-teal-400">*</span>
+        <div className="relative flex flex-col gap-1">
+          <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+            Select Medicine <span className="text-primary font-bold">*</span>
           </label>
           <div className="relative">
             <input
@@ -167,11 +168,11 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
                 setSearchQuery(e.target.value);
                 if (selectedItem) setSelectedItem(null);
               }}
-              className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700/60 rounded-lg text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full h-11 px-4 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm placeholder:text-on-surface-variant/60 focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               required
             />
             {searching && (
-              <span className="absolute right-3 top-2.5 text-xs text-slate-400 animate-spin material-symbols-outlined">
+              <span className="absolute right-3.5 top-3 text-on-surface-variant animate-spin material-symbols-outlined text-[20px]">
                 progress_activity
               </span>
             )}
@@ -182,16 +183,16 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
                   setSelectedItem(null);
                   setSearchQuery('');
                 }}
-                className="absolute right-3 top-2 text-slate-400 hover:text-slate-200"
+                className="absolute right-3.5 top-3 text-on-surface-variant hover:text-on-surface cursor-pointer"
               >
-                <span className="material-symbols-outlined text-sm">close</span>
+                <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             )}
           </div>
 
           {/* Autocomplete Dropdown */}
           {searchResults.length > 0 && !selectedItem && (
-            <div className="absolute z-20 w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-56 overflow-y-auto">
+            <div className="absolute top-16 z-30 w-full bg-surface-container-lowest border border-outline-variant/30 rounded-2xl shadow-xl max-h-56 overflow-y-auto divide-y divide-surface-container">
               {searchResults.map((item) => (
                 <button
                   key={item._id}
@@ -201,14 +202,14 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
                     setSearchQuery(`${item.tradeName} (${item.genericName})`);
                     setSearchResults([]);
                   }}
-                  className="w-full text-left px-3 py-2 hover:bg-teal-950/40 border-b border-slate-800/60 last:border-0 flex items-center justify-between transition-colors"
+                  className="w-full text-left px-4 py-3 hover:bg-surface-container-low flex items-center justify-between transition-colors cursor-pointer"
                 >
                   <div>
-                    <span className="text-sm font-semibold text-slate-100">{item.tradeName}</span>
-                    <span className="text-xs text-slate-400 ml-2">({item.genericName})</span>
+                    <span className="text-sm font-bold text-on-surface">{item.tradeName}</span>
+                    <span className="text-xs text-on-surface-variant ml-2">({item.genericName})</span>
                   </div>
-                  <span className="text-xs font-mono text-teal-400">
-                    ৳ {parseFloat(item.mrpPerPiece).toFixed(2)}/pc
+                  <span className="text-xs font-mono font-bold text-primary">
+                    ৳ {parseFloat(item.mrpPerPiece).toFixed(2)} / pc
                   </span>
                 </button>
               ))}
@@ -218,10 +219,10 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
 
         {/* Selected Item Information Chip */}
         {selectedItem && (
-          <div className="p-2.5 bg-teal-950/30 border border-teal-500/20 rounded-lg text-xs flex items-center justify-between text-teal-300 font-sans">
+          <div className="p-3 bg-primary-container/10 border border-primary/20 rounded-xl text-xs flex items-center justify-between text-primary font-sans">
             <div>
-              <span className="font-semibold">{selectedItem.tradeName}</span> —{' '}
-              <span className="text-slate-400">
+              <span className="font-bold">{selectedItem.tradeName}</span> —{' '}
+              <span className="text-on-surface-variant">
                 {selectedItem.unitHierarchy?.piecesPerStrip} pcs/strip,{' '}
                 {selectedItem.unitHierarchy?.stripsPerBox} strips/box (
                 {(selectedItem.unitHierarchy?.piecesPerStrip || 1) *
@@ -229,8 +230,8 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
                 pcs/box)
               </span>
             </div>
-            <span className="font-mono bg-teal-900/40 px-2 py-0.5 rounded border border-teal-600/30">
-              MRP: ৳ {selectedItem.mrpPerPiece}/pc
+            <span className="font-mono font-bold bg-surface-container-lowest px-2.5 py-1 rounded-lg border border-primary/20">
+              MRP: ৳ {selectedItem.mrpPerPiece} / pc
             </span>
           </div>
         )}
@@ -256,21 +257,21 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
         </div>
 
         {/* Receiving Unit & Quantity */}
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-xl space-y-3">
+        <div className="p-4 bg-surface-container-low rounded-2xl border border-surface-container space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+            <span className="text-xs font-bold text-on-surface uppercase tracking-wider">
               Quantity & Unit Received
             </span>
             {totalCalculatedPieces > 0 && (
-              <span className="text-xs font-mono font-bold text-teal-400 bg-teal-950/60 px-2.5 py-1 rounded-md border border-teal-500/30">
+              <span className="text-xs font-mono font-bold text-primary bg-primary-container/15 px-3 py-1 rounded-lg border border-primary/20">
                 Total: {totalCalculatedPieces} Pieces
               </span>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                 Receiving Unit
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -279,10 +280,10 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
                     key={u}
                     type="button"
                     onClick={() => setUnit(u)}
-                    className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all capitalize ${
+                    className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all capitalize cursor-pointer ${
                       unit === u
-                        ? 'bg-teal-600 text-white border-teal-500 shadow-md shadow-teal-900/40'
-                        : 'bg-slate-900/80 text-slate-400 border-slate-700 hover:text-slate-200'
+                        ? 'bg-primary text-on-primary border-primary shadow-sm'
+                        : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/30 hover:bg-surface-container'
                     }`}
                   >
                     {u}
@@ -321,8 +322,8 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
               }
             />
           ) : (
-            <div className="p-3 bg-slate-900/40 border border-slate-800 rounded-lg text-xs text-slate-400 flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm text-teal-400">info</span>
+            <div className="p-3 bg-surface-container-low border border-surface-container rounded-xl text-xs text-on-surface-variant flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px] text-primary">info</span>
               Pharmacist receiving: purchase price will be flagged as cost-missing for owner review.
             </div>
           )}
@@ -335,7 +336,7 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
           />
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

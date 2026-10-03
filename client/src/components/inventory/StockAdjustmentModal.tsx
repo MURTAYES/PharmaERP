@@ -109,39 +109,40 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Stock Bucket Adjustment & Audit" maxWidth="md">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-left">
         {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-lg">
-            {error}
+          <div className="p-3 bg-error-container text-on-error-container text-xs font-semibold rounded-xl flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">error</span>
+            <span>{error}</span>
           </div>
         )}
 
         {/* Batch Info Summary */}
-        <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl space-y-2">
+        <div className="p-4 bg-surface-container-low border border-surface-container rounded-2xl space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-100">{item.tradeName}</span>
-            <span className="text-xs font-mono font-semibold text-teal-400 bg-teal-950 px-2 py-0.5 rounded border border-teal-800/40">
+            <span className="text-sm font-bold text-on-surface">{item.tradeName}</span>
+            <span className="text-xs font-mono font-bold text-primary bg-primary-container/15 px-2.5 py-1 rounded-lg border border-primary/20">
               Batch: {batch.batchNumber}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="p-1.5 bg-slate-800/60 rounded">
-              <span className="text-slate-400 block">Sellable</span>
-              <span className="font-mono font-bold text-emerald-400">{batch.qtySellable} pcs</span>
+            <div className="p-2 bg-surface-container-lowest rounded-xl border border-surface-container">
+              <span className="text-on-surface-variant block text-[11px] font-semibold">Sellable</span>
+              <span className="font-mono font-extrabold text-emerald-700 text-sm">{batch.qtySellable} pcs</span>
             </div>
-            <div className="p-1.5 bg-slate-800/60 rounded">
-              <span className="text-slate-400 block">Damaged</span>
-              <span className="font-mono font-bold text-amber-400">{batch.qtyDamaged} pcs</span>
+            <div className="p-2 bg-surface-container-lowest rounded-xl border border-surface-container">
+              <span className="text-on-surface-variant block text-[11px] font-semibold">Damaged</span>
+              <span className="font-mono font-extrabold text-amber-700 text-sm">{batch.qtyDamaged} pcs</span>
             </div>
-            <div className="p-1.5 bg-slate-800/60 rounded">
-              <span className="text-slate-400 block">Expired</span>
-              <span className="font-mono font-bold text-rose-400">{batch.qtyExpired} pcs</span>
+            <div className="p-2 bg-surface-container-lowest rounded-xl border border-surface-container">
+              <span className="text-on-surface-variant block text-[11px] font-semibold">Expired</span>
+              <span className="font-mono font-extrabold text-error text-sm">{batch.qtyExpired} pcs</span>
             </div>
           </div>
         </div>
 
         {/* Action Type Selector */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => {
@@ -149,10 +150,10 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
               setFromBucket('sellable');
               setToBucket('damaged');
             }}
-            className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${
+            className={`py-2.5 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
               actionType === 'transfer'
-                ? 'bg-teal-600 text-white border-teal-500 shadow-sm'
-                : 'bg-slate-900/60 text-slate-400 border-slate-700'
+                ? 'bg-primary text-on-primary border-primary shadow-sm'
+                : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30 hover:bg-surface-container'
             }`}
           >
             Transfer Between Buckets
@@ -163,10 +164,10 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
               setActionType('write_off');
               setFromBucket('damaged');
             }}
-            className={`py-2 px-3 text-xs font-semibold rounded-lg border transition-all ${
+            className={`py-2.5 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
               actionType === 'write_off'
-                ? 'bg-rose-600 text-white border-rose-500 shadow-sm'
-                : 'bg-slate-900/60 text-slate-400 border-slate-700'
+                ? 'bg-error text-on-error border-error shadow-sm'
+                : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30 hover:bg-surface-container'
             }`}
           >
             Write-Off Spoiled Stock
@@ -175,14 +176,14 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
 
         {/* Bucket Selection */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              From Bucket (Available: {availableInSource} pcs)
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+              From (Avail: {availableInSource} pcs)
             </label>
             <select
               value={fromBucket}
               onChange={(e) => setFromBucket(e.target.value as any)}
-              className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700/60 rounded-lg text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full h-11 px-3 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             >
               {actionType === 'transfer' && <option value="sellable">Sellable ({batch.qtySellable})</option>}
               <option value="damaged">Damaged ({batch.qtyDamaged})</option>
@@ -191,14 +192,14 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
           </div>
 
           {actionType === 'transfer' ? (
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                 To Destination Bucket
               </label>
               <select
                 value={toBucket}
                 onChange={(e) => setToBucket(e.target.value as any)}
-                className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700/60 rounded-lg text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full h-11 px-3 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               >
                 <option value="sellable">Sellable</option>
                 <option value="damaged">Damaged</option>
@@ -206,11 +207,11 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
               </select>
             </div>
           ) : (
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                 Disposal Action
               </label>
-              <div className="px-3 py-2 bg-rose-950/40 border border-rose-800/40 text-rose-300 rounded-lg text-sm font-semibold">
+              <div className="h-11 px-3 bg-red-50 border border-error/30 text-error rounded-xl text-xs font-bold flex items-center">
                 Permanent Disposal / Write-Off
               </div>
             </div>
@@ -230,14 +231,14 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
         />
 
         {/* Structured Reason Category */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-            Audit Reason Category <span className="text-teal-400">*</span>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+            Audit Reason Category <span className="text-primary font-bold">*</span>
           </label>
           <select
             value={reasonCategory}
             onChange={(e) => setReasonCategory(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700/60 rounded-lg text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full h-11 px-3 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           >
             {REASON_CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
@@ -248,21 +249,21 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
         </div>
 
         {/* Detail Note */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-            Mandatory Explanation Note <span className="text-teal-400">*</span>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+            Mandatory Explanation Note <span className="text-primary font-bold">*</span>
           </label>
           <textarea
             rows={2}
             value={reasonDetail}
             onChange={(e) => setReasonDetail(e.target.value)}
             placeholder="Explain why this stock is being adjusted or written off..."
-            className="w-full px-3 py-2 bg-slate-900/80 border border-slate-700/60 rounded-lg text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full p-3 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm placeholder:text-on-surface-variant/60 focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             required
           />
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">
           <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

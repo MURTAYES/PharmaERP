@@ -158,20 +158,24 @@ export const Inventory: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6 w-full text-left">
       {/* Top Header & Fast Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <span className="material-symbols-outlined text-teal-400 text-3xl">medication</span>
-            Medicine & Inventory Management
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Batch-wise stock control with multi-unit hierarchy, FEFO tracking, and real-time alert filters.
-          </p>
+      <div className="w-full bg-surface-container-lowest rounded-3xl p-6 sm:p-8 shadow-clinical border border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary-container/15 flex items-center justify-center text-primary shrink-0 shadow-sm">
+            <span className="material-symbols-outlined text-[28px]">medication</span>
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-on-surface tracking-tight">
+              Medicine & Inventory Control
+            </h1>
+            <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">
+              Batch-wise stock management with multi-unit hierarchy, FEFO tracking, and live expiry alerts.
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3 flex-wrap">
           <Button
             variant="outline"
             onClick={() => {
@@ -179,7 +183,7 @@ export const Inventory: React.FC = () => {
               setIsItemModalOpen(true);
             }}
           >
-            <span className="material-symbols-outlined text-lg mr-1.5">add_circle</span>
+            <span className="material-symbols-outlined text-[18px] mr-1.5">add_circle</span>
             Add Medicine
           </Button>
 
@@ -190,30 +194,30 @@ export const Inventory: React.FC = () => {
               setIsReceivingModalOpen(true);
             }}
           >
-            <span className="material-symbols-outlined text-lg mr-1.5">inventory_2</span>
+            <span className="material-symbols-outlined text-[18px] mr-1.5">inventory_2</span>
             Receive Stock
           </Button>
         </div>
       </div>
 
       {/* Top Alert KPI Chips (1-Click Filters) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <button
           type="button"
           onClick={() => {
             setActiveAlertFilter('all');
             setPage(1);
           }}
-          className={`p-3 rounded-xl border text-left transition-all ${
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
             activeAlertFilter === 'all'
-              ? 'bg-slate-800 border-teal-500/80 ring-2 ring-teal-500/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+              ? 'bg-primary-container/10 border-primary shadow-sm ring-2 ring-primary/20'
+              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-outline-variant'
           }`}
         >
-          <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
             All Items
           </div>
-          <div className="text-xl font-mono font-bold text-slate-100 mt-1">{totalItems}</div>
+          <div className="text-2xl font-mono font-extrabold text-on-surface mt-1">{totalItems}</div>
         </button>
 
         <button
@@ -222,17 +226,17 @@ export const Inventory: React.FC = () => {
             setActiveAlertFilter('expired');
             setPage(1);
           }}
-          className={`p-3 rounded-xl border text-left transition-all ${
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
             activeAlertFilter === 'expired'
-              ? 'bg-rose-950/40 border-rose-500 ring-2 ring-rose-500/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-rose-900/60'
+              ? 'bg-red-50 border-error ring-2 ring-error/20'
+              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-error/50'
           }`}
         >
-          <div className="text-xs text-rose-400 font-semibold uppercase tracking-wider flex items-center justify-between">
+          <div className="text-[11px] font-bold text-error uppercase tracking-wider flex items-center justify-between">
             <span>Expired</span>
-            <span className="material-symbols-outlined text-sm">dangerous</span>
+            <span className="material-symbols-outlined text-[16px]">dangerous</span>
           </div>
-          <div className="text-xl font-mono font-bold text-rose-300 mt-1">
+          <div className="text-2xl font-mono font-extrabold text-error mt-1">
             {alertSummary?.expiredCount || 0}
           </div>
         </button>
@@ -243,17 +247,17 @@ export const Inventory: React.FC = () => {
             setActiveAlertFilter('critical');
             setPage(1);
           }}
-          className={`p-3 rounded-xl border text-left transition-all ${
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
             activeAlertFilter === 'critical'
-              ? 'bg-amber-950/40 border-amber-500 ring-2 ring-amber-500/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-amber-900/60'
+              ? 'bg-amber-50 border-amber-600 ring-2 ring-amber-600/20'
+              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-amber-500/50'
           }`}
         >
-          <div className="text-xs text-amber-400 font-semibold uppercase tracking-wider flex items-center justify-between">
+          <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wider flex items-center justify-between">
             <span>&lt;30d Critical</span>
-            <span className="material-symbols-outlined text-sm">warning</span>
+            <span className="material-symbols-outlined text-[16px]">warning</span>
           </div>
-          <div className="text-xl font-mono font-bold text-amber-300 mt-1">
+          <div className="text-2xl font-mono font-extrabold text-amber-700 mt-1">
             {alertSummary?.critical30Count || 0}
           </div>
         </button>
@@ -264,17 +268,17 @@ export const Inventory: React.FC = () => {
             setActiveAlertFilter('warning');
             setPage(1);
           }}
-          className={`p-3 rounded-xl border text-left transition-all ${
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
             activeAlertFilter === 'warning'
-              ? 'bg-yellow-950/40 border-yellow-500 ring-2 ring-yellow-500/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-yellow-900/60'
+              ? 'bg-yellow-50 border-yellow-600 ring-2 ring-yellow-600/20'
+              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-yellow-500/50'
           }`}
         >
-          <div className="text-xs text-yellow-400 font-semibold uppercase tracking-wider flex items-center justify-between">
+          <div className="text-[11px] font-bold text-yellow-800 uppercase tracking-wider flex items-center justify-between">
             <span>&lt;60d Warning</span>
-            <span className="material-symbols-outlined text-sm">schedule</span>
+            <span className="material-symbols-outlined text-[16px]">schedule</span>
           </div>
-          <div className="text-xl font-mono font-bold text-yellow-300 mt-1">
+          <div className="text-2xl font-mono font-extrabold text-yellow-800 mt-1">
             {alertSummary?.warning60Count || 0}
           </div>
         </button>
@@ -285,17 +289,17 @@ export const Inventory: React.FC = () => {
             setActiveAlertFilter('notice');
             setPage(1);
           }}
-          className={`p-3 rounded-xl border text-left transition-all ${
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
             activeAlertFilter === 'notice'
-              ? 'bg-teal-950/40 border-teal-500 ring-2 ring-teal-500/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-teal-900/60'
+              ? 'bg-teal-50 border-primary ring-2 ring-primary/20'
+              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-primary/50'
           }`}
         >
-          <div className="text-xs text-teal-400 font-semibold uppercase tracking-wider flex items-center justify-between">
+          <div className="text-[11px] font-bold text-primary uppercase tracking-wider flex items-center justify-between">
             <span>&lt;90d Notice</span>
-            <span className="material-symbols-outlined text-sm">event_upcoming</span>
+            <span className="material-symbols-outlined text-[16px]">event_upcoming</span>
           </div>
-          <div className="text-xl font-mono font-bold text-teal-300 mt-1">
+          <div className="text-2xl font-mono font-extrabold text-primary mt-1">
             {alertSummary?.notice90Count || 0}
           </div>
         </button>
@@ -306,49 +310,49 @@ export const Inventory: React.FC = () => {
             setActiveAlertFilter('low_stock');
             setPage(1);
           }}
-          className={`p-3 rounded-xl border text-left transition-all ${
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
             activeAlertFilter === 'low_stock'
-              ? 'bg-rose-950/40 border-rose-400 ring-2 ring-rose-400/20'
-              : 'bg-slate-900/60 border-slate-800 hover:border-rose-900/60'
+              ? 'bg-rose-50 border-rose-600 ring-2 ring-rose-600/20'
+              : 'bg-surface-container-lowest border-outline-variant/30 hover:border-rose-500/50'
           }`}
         >
-          <div className="text-xs text-rose-300 font-semibold uppercase tracking-wider flex items-center justify-between">
+          <div className="text-[11px] font-bold text-rose-700 uppercase tracking-wider flex items-center justify-between">
             <span>Low Stock</span>
-            <span className="material-symbols-outlined text-sm">production_quantity_limits</span>
+            <span className="material-symbols-outlined text-[16px]">production_quantity_limits</span>
           </div>
-          <div className="text-xl font-mono font-bold text-rose-300 mt-1">
+          <div className="text-2xl font-mono font-extrabold text-rose-700 mt-1">
             {alertSummary?.lowStockCount || 0}
           </div>
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <Card className="p-4 bg-slate-900/90">
+      <Card className="p-4 bg-surface-container-lowest">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-2.5 text-slate-500 material-symbols-outlined text-lg">
+            <span className="absolute left-3.5 top-3 text-on-surface-variant/60 material-symbols-outlined text-[20px]">
               search
             </span>
             <input
               type="text"
-              placeholder="Type-ahead search by brand name, generic name, code..."
+              placeholder="Type-ahead search by brand name, generic formulation, medicine code..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full pl-11 pr-4 py-2.5 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm placeholder:text-on-surface-variant/60 focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
-          <div className="w-full sm:w-56">
+          <div className="w-full sm:w-64">
             <select
               value={category}
               onChange={(e) => {
                 setCategory(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2.5 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
@@ -362,24 +366,24 @@ export const Inventory: React.FC = () => {
       </Card>
 
       {/* Medicines Table */}
-      <Card className="overflow-hidden border-slate-800">
+      <Card className="overflow-hidden p-0 border-outline-variant/30">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-900/90 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-800">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="bg-surface-container-low text-xs text-on-surface-variant font-bold uppercase tracking-wider border-b border-surface-container">
               <tr>
-                <th className="px-4 py-3.5">Code & Medicine Name</th>
-                <th className="px-4 py-3.5">Category & Shelf</th>
-                <th className="px-4 py-3.5">Unit Packaging & MRP</th>
-                <th className="px-4 py-3.5">Sellable Stock</th>
-                <th className="px-4 py-3.5">Earliest Expiry</th>
-                <th className="px-4 py-3.5 text-right">Actions</th>
+                <th className="px-5 py-4">Code & Medicine</th>
+                <th className="px-5 py-4">Category & Location</th>
+                <th className="px-5 py-4">Packaging & MRP</th>
+                <th className="px-5 py-4">Sellable Stock</th>
+                <th className="px-5 py-4">Earliest Expiry</th>
+                <th className="px-5 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-surface-container">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-400">
-                    <span className="material-symbols-outlined text-3xl animate-spin text-teal-400 block mb-2">
+                  <td colSpan={6} className="text-center py-16 text-on-surface-variant">
+                    <span className="material-symbols-outlined text-4xl animate-spin text-primary block mb-2 mx-auto">
                       progress_activity
                     </span>
                     Loading inventory catalog...
@@ -387,11 +391,11 @@ export const Inventory: React.FC = () => {
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-500">
-                    <span className="material-symbols-outlined text-4xl text-slate-600 block mb-2">
-                      inventory
+                  <td colSpan={6} className="text-center py-16 text-on-surface-variant">
+                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 block mb-2 mx-auto">
+                      inventory_2
                     </span>
-                    No medicines found matching the selected criteria.
+                    No medicines found matching the selected filter.
                   </td>
                 </tr>
               ) : (
@@ -405,56 +409,56 @@ export const Inventory: React.FC = () => {
                   return (
                     <React.Fragment key={item._id}>
                       <tr
-                        className={`hover:bg-slate-800/40 transition-colors ${
+                        className={`hover:bg-surface-container-low/60 transition-colors ${
                           !item.isActive ? 'opacity-50' : ''
                         }`}
                       >
                         {/* Code and Brand Name */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-teal-400 bg-teal-950/70 px-1.5 py-0.5 rounded border border-teal-800/40">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2.5">
+                            <span className="font-mono text-xs text-primary font-bold bg-primary-container/10 px-2 py-1 rounded-lg border border-primary/20">
                               {item.itemCode}
                             </span>
                             <div>
-                              <span className="font-semibold text-slate-100">{item.tradeName}</span>
-                              <div className="text-xs text-slate-400">{item.genericName}</div>
+                              <span className="font-bold text-on-surface">{item.tradeName}</span>
+                              <div className="text-xs text-on-surface-variant">{item.genericName}</div>
                             </div>
                           </div>
                         </td>
 
                         {/* Category & Shelf */}
-                        <td className="px-4 py-3">
-                          <div className="text-xs text-slate-300">{item.category}</div>
-                          <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                            <span className="material-symbols-outlined text-xs">location_on</span>
+                        <td className="px-5 py-4">
+                          <div className="text-xs font-semibold text-on-surface">{item.category}</div>
+                          <div className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
+                            <span className="material-symbols-outlined text-[14px]">location_on</span>
                             {item.shelfLocation || 'Unassigned'}
                           </div>
                         </td>
 
                         {/* Unit Packaging & MRP */}
-                        <td className="px-4 py-3">
-                          <div className="text-xs font-mono text-slate-200">
-                            Unit: <span className="text-teal-300 font-bold">৳ {item.mrpPerPiece}</span>
-                            <span className="text-slate-500 ml-1">
+                        <td className="px-5 py-4">
+                          <div className="text-xs font-mono text-on-surface">
+                            Unit: <span className="text-primary font-bold">৳ {item.mrpPerPiece}</span>
+                            <span className="text-on-surface-variant ml-1">
                               (Strip: ৳ {item.stripPrice} | Box: ৳ {item.boxPrice})
                             </span>
                           </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">
+                          <div className="text-[11px] text-on-surface-variant mt-0.5">
                             {stripsPerBox} strips × {pcsPerStrip} pcs ({totalPcsBox} pcs/box)
                           </div>
                         </td>
 
                         {/* Sellable Stock with Low Stock tag */}
-                        <td className="px-4 py-3">
+                        <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-sm text-slate-100">
+                            <span className="font-mono font-bold text-sm text-on-surface">
                               {sellable} pcs
                             </span>
                             {item.isLowStock && (
                               <Badge variant="error">Low (&lt;{item.lowStockThresholdPieces})</Badge>
                             )}
                           </div>
-                          <div className="text-[11px] text-slate-500">
+                          <div className="text-[11px] text-on-surface-variant font-mono">
                             {Math.floor(sellable / totalPcsBox)} box,{' '}
                             {Math.floor((sellable % totalPcsBox) / pcsPerStrip)} strip,{' '}
                             {sellable % pcsPerStrip} pc
@@ -462,22 +466,22 @@ export const Inventory: React.FC = () => {
                         </td>
 
                         {/* Earliest Expiry */}
-                        <td className="px-4 py-3">{getExpiryBadge(item.earliestExpiry)}</td>
+                        <td className="px-5 py-4">{getExpiryBadge(item.earliestExpiry)}</td>
 
                         {/* Actions */}
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-5 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
                             <button
                               type="button"
                               onClick={() => toggleItemBatches(item._id)}
-                              className={`px-2.5 py-1 text-xs rounded-lg border transition-colors flex items-center gap-1 ${
+                              className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all flex items-center gap-1 cursor-pointer ${
                                 isExpanded
-                                  ? 'bg-teal-600 text-white border-teal-500'
-                                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                                  ? 'bg-primary text-on-primary border-primary shadow-sm'
+                                  : 'bg-surface-container-low text-on-surface border-outline-variant/40 hover:bg-surface-container'
                               }`}
                               title="View & manage individual batches"
                             >
-                              <span className="material-symbols-outlined text-xs">
+                              <span className="material-symbols-outlined text-[16px]">
                                 {isExpanded ? 'expand_less' : 'expand_more'}
                               </span>
                               Batches ({item.batchCount || 0})
@@ -489,10 +493,10 @@ export const Inventory: React.FC = () => {
                                 setPreselectedItem(item);
                                 setIsReceivingModalOpen(true);
                               }}
-                              className="p-1 text-slate-400 hover:text-teal-400 hover:bg-slate-800 rounded transition-colors"
+                              className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
                               title="Receive stock for this medicine"
                             >
-                              <span className="material-symbols-outlined text-sm">add_box</span>
+                              <span className="material-symbols-outlined text-[20px]">add_box</span>
                             </button>
 
                             <button
@@ -501,24 +505,24 @@ export const Inventory: React.FC = () => {
                                 setItemToEdit(item);
                                 setIsItemModalOpen(true);
                               }}
-                              className="p-1 text-slate-400 hover:text-teal-400 hover:bg-slate-800 rounded transition-colors"
+                              className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
                               title="Edit medicine master"
                             >
-                              <span className="material-symbols-outlined text-sm">edit</span>
+                              <span className="material-symbols-outlined text-[20px]">edit</span>
                             </button>
 
                             {isOwner && (
                               <button
                                 type="button"
                                 onClick={() => handleToggleActive(item._id)}
-                                className={`p-1 rounded transition-colors ${
+                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                                   item.isActive
-                                    ? 'text-slate-400 hover:text-rose-400'
-                                    : 'text-rose-400 hover:text-emerald-400'
+                                    ? 'text-on-surface-variant hover:text-error hover:bg-error-container/30'
+                                    : 'text-error hover:text-emerald-700 hover:bg-emerald-100'
                                 }`}
                                 title={item.isActive ? 'Deactivate medicine' : 'Activate medicine'}
                               >
-                                <span className="material-symbols-outlined text-sm">
+                                <span className="material-symbols-outlined text-[20px]">
                                   {item.isActive ? 'block' : 'check_circle'}
                                 </span>
                               </button>
@@ -529,12 +533,12 @@ export const Inventory: React.FC = () => {
 
                       {/* Expandable Batch Drawer Row */}
                       {isExpanded && (
-                        <tr className="bg-slate-950/90 border-b border-slate-800">
-                          <td colSpan={6} className="p-4">
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-semibold text-teal-400 flex items-center gap-1.5">
-                                  <span className="material-symbols-outlined text-sm">layers</span>
+                        <tr className="bg-surface-container-low/50 border-b border-surface-container">
+                          <td colSpan={6} className="p-5">
+                            <div className="flex flex-col gap-3">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-xs text-primary flex items-center gap-1.5">
+                                  <span className="material-symbols-outlined text-[18px]">layers</span>
                                   Active Batches for {item.tradeName} (FEFO Ordered)
                                 </span>
                                 <Button
@@ -545,7 +549,7 @@ export const Inventory: React.FC = () => {
                                     setIsReceivingModalOpen(true);
                                   }}
                                 >
-                                  <span className="material-symbols-outlined text-xs mr-1">
+                                  <span className="material-symbols-outlined text-[16px] mr-1">
                                     add
                                   </span>
                                   Receive New Batch
@@ -553,50 +557,50 @@ export const Inventory: React.FC = () => {
                               </div>
 
                               {loadingBatches ? (
-                                <div className="text-center py-4 text-xs text-slate-400 animate-pulse">
-                                  Loading batches...
+                                <div className="text-center py-6 text-xs text-on-surface-variant animate-pulse">
+                                  Loading batch inventory...
                                 </div>
                               ) : expandedBatches.length === 0 ? (
-                                <div className="p-4 text-center text-xs text-slate-500 bg-slate-900/40 rounded-lg border border-slate-800">
-                                  No stock batches found for this item. Click "Receive New Batch" to add stock.
+                                <div className="p-6 text-center text-xs text-on-surface-variant bg-surface-container-lowest rounded-xl border border-surface-container">
+                                  No active batches recorded for this medicine. Click "Receive New Batch" to add stock.
                                 </div>
                               ) : (
-                                <div className="overflow-x-auto rounded-lg border border-slate-800">
-                                  <table className="w-full text-xs text-left">
-                                    <thead className="bg-slate-900 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                <div className="overflow-x-auto rounded-xl border border-surface-container bg-surface-container-lowest">
+                                  <table className="w-full text-xs text-left border-collapse">
+                                    <thead className="bg-surface-container-low text-on-surface-variant font-bold uppercase tracking-wider border-b border-surface-container">
                                       <tr>
-                                        <th className="px-3 py-2">Batch No</th>
-                                        <th className="px-3 py-2">Expiry Date</th>
-                                        <th className="px-3 py-2">Sellable</th>
-                                        <th className="px-3 py-2">Damaged</th>
-                                        <th className="px-3 py-2">Expired</th>
-                                        {isOwner && <th className="px-3 py-2">Cost / Pc</th>}
-                                        <th className="px-3 py-2">Supplier</th>
-                                        <th className="px-3 py-2 text-right">Actions</th>
+                                        <th className="px-4 py-3">Batch No</th>
+                                        <th className="px-4 py-3">Expiry Date</th>
+                                        <th className="px-4 py-3">Sellable</th>
+                                        <th className="px-4 py-3">Damaged</th>
+                                        <th className="px-4 py-3">Expired</th>
+                                        {isOwner && <th className="px-4 py-3">Cost / Pc</th>}
+                                        <th className="px-4 py-3">Supplier</th>
+                                        <th className="px-4 py-3 text-right">Actions</th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-800/60 bg-slate-950">
+                                    <tbody className="divide-y divide-surface-container">
                                       {expandedBatches.map((batch) => (
-                                        <tr key={batch._id} className="hover:bg-slate-900/60">
-                                          <td className="px-3 py-2 font-mono font-bold text-slate-200">
+                                        <tr key={batch._id} className="hover:bg-surface-container-low/40">
+                                          <td className="px-4 py-3 font-mono font-bold text-on-surface">
                                             {batch.batchNumber}
                                           </td>
-                                          <td className="px-3 py-2">
+                                          <td className="px-4 py-3">
                                             {getExpiryBadge(batch.expiryDate)}
                                           </td>
-                                          <td className="px-3 py-2 font-mono text-emerald-400 font-semibold">
+                                          <td className="px-4 py-3 font-mono text-emerald-700 font-bold">
                                             {batch.qtySellable} pcs
                                           </td>
-                                          <td className="px-3 py-2 font-mono text-amber-400">
+                                          <td className="px-4 py-3 font-mono text-amber-700 font-medium">
                                             {batch.qtyDamaged} pcs
                                           </td>
-                                          <td className="px-3 py-2 font-mono text-rose-400">
+                                          <td className="px-4 py-3 font-mono text-error font-medium">
                                             {batch.qtyExpired} pcs
                                           </td>
 
                                           {/* Cost per piece (Owner only) */}
                                           {isOwner && (
-                                            <td className="px-3 py-2 font-mono">
+                                            <td className="px-4 py-3 font-mono">
                                               {batch.isCostMissing ? (
                                                 <button
                                                   type="button"
@@ -605,23 +609,23 @@ export const Inventory: React.FC = () => {
                                                     setSelectedItemForAdj(item);
                                                     setIsCostModalOpen(true);
                                                   }}
-                                                  className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] hover:bg-amber-500/30"
+                                                  className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold hover:bg-amber-200 cursor-pointer"
                                                 >
                                                   Cost Missing ✏️
                                                 </button>
                                               ) : (
-                                                <span className="text-slate-300">
+                                                <span className="text-on-surface font-semibold">
                                                   ৳ {batch.purchasePricePerPiece}
                                                 </span>
                                               )}
                                             </td>
                                           )}
 
-                                          <td className="px-3 py-2 text-slate-400">
+                                          <td className="px-4 py-3 text-on-surface-variant">
                                             {batch.supplierName || '—'}
                                           </td>
 
-                                          <td className="px-3 py-2 text-right">
+                                          <td className="px-4 py-3 text-right">
                                             {isOwner && (
                                               <Button
                                                 variant="outline"
@@ -656,12 +660,12 @@ export const Inventory: React.FC = () => {
 
         {/* Pagination Bar */}
         {totalPages > 1 && (
-          <div className="p-3 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <div className="p-4 bg-surface-container-low border-t border-surface-container flex items-center justify-between text-xs text-on-surface-variant">
             <div>
-              Showing page <span className="font-bold text-slate-200">{page}</span> of{' '}
-              <span className="font-bold text-slate-200">{totalPages}</span> ({totalItems} total)
+              Showing page <span className="font-bold text-on-surface">{page}</span> of{' '}
+              <span className="font-bold text-on-surface">{totalPages}</span> ({totalItems} total)
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
