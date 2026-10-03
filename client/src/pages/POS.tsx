@@ -70,23 +70,38 @@ export const POS: React.FC = () => {
     } catch {}
   };
 
+  // Autofocus product search on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      productSearchInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Keyboard Shortcuts Hook
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // F2 or '/' to Focus Product Name Search
-      if (
-        e.key === 'F2' ||
-        (e.key === '/' &&
-          (e.target as HTMLElement).tagName !== 'INPUT' &&
-          (e.target as HTMLElement).tagName !== 'TEXTAREA')
+      // F2 to Focus Product Name Search
+      if (e.key === 'F2') {
+        e.preventDefault();
+        productSearchInputRef.current?.focus();
+        productSearchInputRef.current?.select();
+      }
+      // '/' to Focus Product Name Search when not typing in an input
+      else if (
+        e.key === '/' &&
+        (e.target as HTMLElement).tagName !== 'INPUT' &&
+        (e.target as HTMLElement).tagName !== 'TEXTAREA'
       ) {
         e.preventDefault();
         productSearchInputRef.current?.focus();
+        productSearchInputRef.current?.select();
       }
       // F3 to Focus Generic Formulation Search
       else if (e.key === 'F3') {
         e.preventDefault();
         genericSearchInputRef.current?.focus();
+        genericSearchInputRef.current?.select();
       }
       // F4: Open Payment
       else if (e.key === 'F4') {

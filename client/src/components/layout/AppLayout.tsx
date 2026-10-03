@@ -1,8 +1,26 @@
-import { Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar.tsx';
 import { Header } from './Header.tsx';
 
 export function AppLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Global F2: Open POS Billing from anywhere in the app
+      if (e.key === 'F2') {
+        if (location.pathname !== '/pos') {
+          e.preventDefault();
+          navigate('/pos');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [navigate, location.pathname]);
   return (
     <div className="antialiased h-screen w-full flex text-[#002F34] bg-[#F3F7F6] overflow-hidden">
       {/* Left Sidebar - Sticky & Fixed */}
