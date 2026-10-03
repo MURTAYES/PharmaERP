@@ -16,14 +16,14 @@ progress:
 See: [.planning/PROJECT.md](file:///g:/code/PharmaERP/.planning/PROJECT.md) (updated 2026-10-03)
 
 **Core value:** Accurate batch-wise stock with expiry visibility and fast counter billing — every sale traces back to a specific batch, every price override is recorded, and stock can never go negative through concurrent operations.
-**Current focus:** Phase 1: Foundation & Access Control
+**Current focus:** Phase 1: Core Foundation & Auth (End-to-End)
 
 ## Current Position
 
-Phase: 1 of 6 (Foundation & Access Control)
+Phase: 1 of 6 (Core Foundation & Auth (End-to-End))
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-10-03 — Project initialized with research, requirements, and roadmap
+Last activity: 2026-10-03 — Switched roadmap structure to Vertical MVP mode
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -38,11 +38,11 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation & Access Control | - | - | - |
-| 2. Inventory & Stock Management | - | - | - |
-| 3. Billing & Point of Sale | - | - | - |
-| 4. Returns & Credit Notes | - | - | - |
-| 5. Analytics & Reporting | - | - | - |
+| 1. Core Foundation & Auth (End-to-End) | - | - | - |
+| 2. Inventory & Stock Management (End-to-End) | - | - | - |
+| 3. Point of Sale & Billing (End-to-End) | - | - | - |
+| 4. Returns & Credit Notes (End-to-End) | - | - | - |
+| 5. Analytics & Reporting Suite (End-to-End) | - | - | - |
 | 6. Hardening, Integration & Deployment | - | - | - |
 
 **Recent Trend:**
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in [PROJECT.md](file:///g:/code/PharmaERP/.planning/PROJECT.md) Key Decisions table.
 Recent decisions affecting current work:
 
+- [Init]: Roadmap structure configured as Vertical MVP slices (per-phase `**Mode:** mvp`).
 - [Init]: MERN stack with TypeScript, Express, React (Vite), MongoDB Atlas replica set.
 - [Init]: Strict Decimal128 money precision with unrounded math, rounding only grand total (2dp half up).
 - [Init]: Server-side response serializer to guarantee zero cost/profit leakage to pharmacist role.
@@ -82,5 +83,5 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-10-03
-Stopped at: Project initialization complete with requirements and roadmap
+Stopped at: Roadmap updated to Vertical MVP structure
 Resume file: None

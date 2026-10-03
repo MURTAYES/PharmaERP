@@ -2,7 +2,7 @@
 
 ## Overview
 
-PharmaERP is delivered in six structured phases following a robust architecture. We start with the core authentication, RBAC, settings, and audit engine (Phase 1), followed by the complete batch-wise inventory foundation with Decimal128 precision and expiry alerts (Phase 2). Next, we build the high-speed, transaction-safe POS counter billing engine with soft-FEFO enforcement, price overrides, and thermal receipt printing (Phase 3). We then deliver sales returns, bucketed stock restoration, and supplier returns (Phase 4), followed by the owner analytics dashboard, comprehensive reporting suite, and CSV export (Phase 5). Finally, we conduct full-system integration verification, security hardening, and deployment readiness (Phase 6).
+PharmaERP is delivered in vertical end-to-end MVP slices. Each phase delivers a fully working, user-facing slice of functionality (Database + API + UI + UX) so the pharmacy application is functional and testable from the very first phase. We begin with an authenticated shell and settings management (Phase 1), progress to end-to-end batch-wise inventory and alerts (Phase 2), build the complete high-speed counter POS billing and receipt printing experience (Phase 3), deliver sales and supplier returns (Phase 4), provide the owner analytics and reporting suite (Phase 5), and finalize with security hardening and deployment readiness (Phase 6).
 
 ## Phases
 
@@ -10,78 +10,82 @@ PharmaERP is delivered in six structured phases following a robust architecture.
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation & Access Control** - Project scaffolding, JWT authentication, RBAC with field-stripping serializer, pharmacy settings, and audit log.
-- [ ] **Phase 2: Inventory & Stock Management** - Item master, unit conversions, MRP, type-ahead search, batch stock receiving with duplicate merging, stock buckets, adjustments, and expiry/low-stock alerts.
-- [ ] **Phase 3: Billing & Point of Sale** - Counter billing screen, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume, discounts, charges, atomic checkout with $gte guard, sequential invoices, and thermal receipt printing.
-- [ ] **Phase 4: Returns & Credit Notes** - Sales return flow against invoices with destination bucket routing, proportional refund computation, sequential credit notes, and supplier return invoices.
-- [ ] **Phase 5: Analytics & Reporting** - Real-time owner dashboard, sales reports, profit/loss report, price override audit, non-FEFO report, stock valuation, expiry reports, movement ledger, and CSV export.
-- [ ] **Phase 6: Hardening, Integration & Deployment** - End-to-end workflow verification, field-leak security audits, concurrency stress testing, backup scripts, and production deployment configuration.
+- [ ] **Phase 1: Core Foundation & Auth (End-to-End)** - Working app shell, MongoDB Atlas connection, JWT authentication, RBAC with field-stripping serializer, user management UI, pharmacy settings UI, and audit logging.
+- [ ] **Phase 2: Inventory & Stock Management (End-to-End)** - Medicine catalog, unit conversion hierarchies, MRP, type-ahead search, batch stock receiving UI with duplicate merging, stock buckets, manual adjustments, and live expiry/low-stock alerts.
+- [ ] **Phase 3: Point of Sale & Billing (End-to-End)** - Counter billing interface, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume bills, discounts, charges, atomic checkout with $gte guard, sequential invoices, and thermal receipt printing.
+- [ ] **Phase 4: Returns & Credit Notes (End-to-End)** - Invoice lookup for sales returns, stock bucket destination routing, proportional refund calculations, sequential credit notes, and supplier return invoices.
+- [ ] **Phase 5: Analytics & Reporting Suite (End-to-End)** - Real-time owner dashboard, sales reports, profit/loss analysis, price override audit, non-FEFO report, stock valuation, movement ledger, and CSV export.
+- [ ] **Phase 6: Hardening, Integration & Deployment** - End-to-end workflow verification, field-leak security audits, concurrency race testing, backup scripts, and production deployment configuration.
 
 ## Phase Details
 
-### Phase 1: Foundation & Access Control
-**Goal**: Establish project architecture, database connectivity, secure authentication, role-based access control with server-side field stripping, system settings, and immutable audit logging.
+### Phase 1: Core Foundation & Auth (End-to-End)
+**Goal**: Deliver a fully working, secure web application shell with user authentication, role-based access control (Owner vs Pharmacist), server-side field stripping, pharmacy profile settings UI, user management UI, and audit logging.
+**Mode:** mvp
 **Depends on**: Nothing (first phase)
 **Requirements**: [AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, SYS-01, SYS-02, SYS-03, SYS-04, SYS-05, SYS-06, SYS-07]
 **Success Criteria** (what must be TRUE):
-  1. User can authenticate as Owner or Pharmacist, and sessions persist securely across browser refreshes.
-  2. Pharmacist API responses never contain cost, purchase price, profit, or valuation fields.
-  3. Owner can configure pharmacy profile, receipt settings, global charges, and alert windows.
-  4. Sensitive system and auth events are recorded in an append-only audit log.
+  1. Users can log in with username/password, and sessions persist across page refreshes with secure token handling.
+  2. Owner can access full admin capabilities, create users, and configure pharmacy profile/receipt/charge settings via the UI.
+  3. Pharmacist user interface and API responses completely omit purchase price, cost, profit, and valuation data.
+  4. System captures authentication, user changes, and settings modifications in an append-only audit log.
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Backend scaffolding, MongoDB Atlas connection with replica set support, JWT auth, and role guards
-- [ ] 01-02: User management, settings models/routes, response serializer middleware, and audit log engine
-- [ ] 01-03: Frontend scaffolding (React/Vite), auth pages, layout shell with responsive navigation, and settings UI
+- [ ] 01-01: Fullstack project setup, MongoDB Atlas connection, JWT auth system, and RBAC with field-stripping serializer middleware
+- [ ] 01-02: Pharmacy settings, category management, user management APIs, and append-only audit log engine
+- [ ] 01-03: Responsive web application shell, login view, user management interface, settings panel, and audit log viewer
 
-### Phase 2: Inventory & Stock Management
-**Goal**: Build the batch-wise inventory management engine with multi-unit conversion, fast search, stock receiving, bucket management, and expiry alerting.
+### Phase 2: Inventory & Stock Management (End-to-End)
+**Goal**: Deliver a complete end-to-end inventory management system where users can create medicines with multi-unit hierarchies, search via type-ahead (<300ms), receive stock by batch with duplicate merging, manage stock buckets, and view real-time expiry/low-stock alerts.
+**Mode:** mvp
 **Depends on**: Phase 1
 **Requirements**: [INVT-01, INVT-02, INVT-03, INVT-04, INVT-05, INVT-06, INVT-07, INVT-08, INVT-09, INVT-10, INVT-11, INVT-12]
 **Success Criteria** (what must be TRUE):
-  1. User can create medicines with unit hierarchies (piece/strip/box) and MRP per piece.
-  2. Pharmacist or owner can search medicines via type-ahead in under 300ms.
-  3. Stock can be received per batch with duplicate batch merging; pharmacist entry flags cost as missing.
-  4. Stock is tracked in three distinct buckets (sellable, damaged, expired) with owner adjustment workflows.
-  5. System generates proactive alerts for low stock and batches within 90/60/30 day expiry windows.
+  1. User can manage medicines with unit conversions (piece/strip/box) and MRP per piece through the inventory UI.
+  2. Fast type-ahead search returns matching items in <300ms across trade name, generic name, or item code.
+  3. User can receive stock per batch; duplicate batches merge cleanly; pharmacist entries auto-flag cost as missing.
+  4. Stock is visible across sellable, damaged, and expired buckets, and Owner can execute manual adjustments with mandatory audit reasons.
+  5. UI displays visual alert badges and notifications for low-stock items and batches in 90/60/30 day expiry windows.
 **Plans**: TBD
 
 Plans:
 - [ ] 02-01: Item master and unit conversion data models, Decimal128 schema handling, and type-ahead search API
-- [ ] 02-02: Batch receiving engine with duplicate merging, cost-missing logic, stock buckets, and adjustments
+- [ ] 02-02: Batch stock receiving engine with duplicate merging, cost-missing logic, stock buckets, and adjustment workflow
 - [ ] 02-03: Stock movement ledger, expiry calculation service, and low-stock/expiry alerting engine
-- [ ] 02-04: Inventory UI: item catalog, batch receiving modal, stock adjustment interface, and alert lists
+- [ ] 02-04: End-to-end Inventory UI: item catalog, batch receiving modal, stock adjustment interface, and alert panels
 
-### Phase 3: Billing & Point of Sale
-**Goal**: Implement the high-speed counter POS billing screen with FEFO suggestion, non-blocking price overrides, hold/resume, atomic multi-document checkout transactions, sequential invoicing, and thermal receipt printing.
+### Phase 3: Point of Sale & Billing (End-to-End)
+**Goal**: Deliver a high-speed counter POS billing screen with keyboard/touch optimization, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume, discounts, charges, atomic multi-document checkout transactions, sequential invoices, and thermal receipt printing.
+**Mode:** mvp
 **Depends on**: Phase 2
 **Requirements**: [POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, POS-08, POS-09, POS-10, POS-11, POS-12, POS-13, POS-14, POS-15]
 **Success Criteria** (what must be TRUE):
-  1. Pharmacist can build a cart rapidly using keyboard shortcuts and unit selectors.
-  2. System suggests earliest-expiring batch (FEFO) by default; non-FEFO selections are permitted but flagged on the line item.
-  3. Pharmacist can override unit prices without being blocked, with overrides recorded for auditing.
-  4. Bills can be held to the server and resumed from any active terminal.
+  1. Pharmacist can build a cart rapidly using keyboard shortcuts, unit toggles (piece/strip/box), and autofocus.
+  2. System suggests earliest-expiring batch (FEFO) by default; non-FEFO batch selections are permitted but flagged on the line item.
+  3. Pharmacist can override unit prices without being blocked, with overrides recorded on the invoice for auditing.
+  4. Pharmacist can hold current bill to server and resume any held bill later from any terminal.
   5. Checkout atomically creates an immutable invoice snapshot, increments gap-free counter, and deducts stock using `$gte` guards.
   6. Thermal receipts (58mm/80mm) print cleanly via browser print stylesheet.
 **Plans**: TBD
 
 Plans:
-- [ ] 03-01: Invoicing data model, atomic counter engine, and server-side pricing/discount/tax calculation service
+- [ ] 03-01: Invoicing data model, atomic counter engine, and server-side pricing/discount/charge calculation service
 - [ ] 03-02: Atomic checkout transaction service with `$gte` stock deduction guard and movement ledger recording
-- [ ] 03-03: Hold/resume bills API and management service
+- [ ] 03-03: Server-side hold/resume bills API and state management
 - [ ] 03-04: High-speed POS billing UI with keyboard shortcuts, FEFO picker, unit converters, and price override inputs
-- [ ] 03-05: Payment dialog (cash with change calculation, card, MFS) and thermal receipt print template (@page CSS)
+- [ ] 03-05: Payment modal (cash with change calculation, card, MFS, split) and thermal receipt print template (@page CSS)
 
-### Phase 4: Returns & Credit Notes
-**Goal**: Build the sales return pipeline with destination bucket routing, proportional refund calculations, sequential credit notes, and supplier return invoices.
+### Phase 4: Returns & Credit Notes (End-to-End)
+**Goal**: Deliver a complete sales return and supplier return workflow allowing item returns against invoices, destination stock bucket routing, proportional refund calculation, sequential credit notes, and supplier return invoices.
+**Mode:** mvp
 **Depends on**: Phase 3
 **Requirements**: [RET-01, RET-02, RET-03, RET-04, RET-05, RET-06]
 **Success Criteria** (what must be TRUE):
-  1. User can look up an existing invoice and process partial or full item returns.
-  2. Returned items can be routed to sellable, damaged, or expired stock buckets.
+  1. User can look up past invoices and process partial or full item returns through a dedicated returns UI.
+  2. Returned items are correctly routed to sellable, damaged, or expired stock buckets.
   3. Refunds accurately compute proportional discounts and percentage charges while retaining fixed fees.
-  4. Sequential credit notes (CN-000001) are generated and stock buckets updated atomically.
+  4. System generates sequential credit notes (CN-000001) and updates stock buckets atomically.
   5. Owner can issue supplier return invoices (SRT-000001) to deduct damaged/expired inventory.
 **Plans**: TBD
 
@@ -90,8 +94,9 @@ Plans:
 - [ ] 04-02: Supplier return invoice model and bucket deduction engine (owner only)
 - [ ] 04-03: Returns UI: invoice return lookup dialog, bucket selector, credit note view, and supplier return creator
 
-### Phase 5: Analytics & Reporting
-**Goal**: Build the real-time owner executive dashboard, comprehensive audit and operational reports, and universal CSV export.
+### Phase 5: Analytics & Reporting Suite (End-to-End)
+**Goal**: Deliver an executive analytics dashboard for the owner and a comprehensive reporting suite with date filtering and universal CSV export.
+**Mode:** mvp
 **Depends on**: Phase 4
 **Requirements**: [RPT-01, RPT-02, RPT-03, RPT-04, RPT-05, RPT-06, RPT-07, RPT-08, RPT-09, RPT-10, RPT-11, RPT-12]
 **Success Criteria** (what must be TRUE):
@@ -109,14 +114,15 @@ Plans:
 - [ ] 05-04: Report center UI with date range pickers, filter controls, data tables, and client-side CSV export
 
 ### Phase 6: Hardening, Integration & Deployment
-**Goal**: Perform end-to-end cross-phase integration verification, API security audits, concurrency race tests, backup routines, and production packaging.
+**Goal**: Execute comprehensive end-to-end testing, role-leak penetration checks, concurrency race tests, backup/restore routines, and production packaging.
+**Mode:** mvp
 **Depends on**: Phase 5
 **Requirements**: [All v1 Requirements verified end-to-end]
 **Success Criteria** (what must be TRUE):
-  1. Comprehensive automated tests verify that zero cost/profit data leaks to pharmacist API tokens.
+  1. Automated tests verify zero cost/profit data leaks into pharmacist API responses under all circumstances.
   2. Concurrent billing tests prove stock never goes negative under simultaneous checkout load.
   3. Database backup/restore scripts (`mongodump`/`mongorestore`) are documented and operational.
-  4. Production environment builds cleanly with all environment variables validated.
+  4. Production build runs cleanly with all environment variables validated.
 **Plans**: TBD
 
 Plans:
@@ -130,9 +136,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Access Control | 0/3 | Not started | - |
-| 2. Inventory & Stock Management | 0/4 | Not started | - |
-| 3. Billing & Point of Sale | 0/5 | Not started | - |
-| 4. Returns & Credit Notes | 0/3 | Not started | - |
-| 5. Analytics & Reporting | 0/4 | Not started | - |
+| 1. Core Foundation & Auth (End-to-End) | 0/3 | Not started | - |
+| 2. Inventory & Stock Management (End-to-End) | 0/4 | Not started | - |
+| 3. Point of Sale & Billing (End-to-End) | 0/5 | Not started | - |
+| 4. Returns & Credit Notes (End-to-End) | 0/3 | Not started | - |
+| 5. Analytics & Reporting Suite (End-to-End) | 0/4 | Not started | - |
 | 6. Hardening, Integration & Deployment | 0/2 | Not started | - |
