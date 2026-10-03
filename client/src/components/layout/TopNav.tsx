@@ -48,14 +48,16 @@ export function TopNav() {
             <span>Inventory</span>
           </NavLink>
 
-          <span
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-on-surface-variant/40 cursor-not-allowed"
-            title="Phase 3 (POS & Billing)"
-          >
+          <NavLink to="/pos" className={navItemClass}>
             <span className="material-symbols-outlined text-[18px]">point_of_sale</span>
-            <span>Billing</span>
-            <span className="text-[9px] bg-surface-container-high text-on-surface-variant px-1 rounded">v1.3</span>
-          </span>
+            <span>POS Billing</span>
+            <kbd className="text-[9px] bg-primary/10 text-primary px-1 rounded font-mono font-bold">F2</kbd>
+          </NavLink>
+
+          <NavLink to="/invoices" className={navItemClass}>
+            <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+            <span>Invoices</span>
+          </NavLink>
 
           <span
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-on-surface-variant/40 cursor-not-allowed"

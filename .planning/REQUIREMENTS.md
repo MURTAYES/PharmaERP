@@ -32,21 +32,21 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Billing & Point of Sale
 
-- [ ] **POS-01**: Pharmacist can use a fast, keyboard/touch-optimized billing interface with autofocus and shortcut keys
-- [ ] **POS-02**: System automatically suggests the earliest-expiring batch (FEFO order) when an item is selected
-- [ ] **POS-03**: Pharmacist can select a non-FEFO batch without being blocked, automatically flagging the invoice line item
-- [ ] **POS-04**: Pharmacist can select sale unit (piece, strip, box) with automatic price and piece-quantity calculation
-- [ ] **POS-05**: Pharmacist can override unit price on any line item (never blocked, recorded on invoice and logged)
-- [ ] **POS-06**: Pharmacist can manage cart line items (add, edit quantity/unit, remove, instant line subtotal)
-- [ ] **POS-07**: Pharmacist can hold current bill to server and resume any held bill later from any terminal
-- [ ] **POS-08**: Pharmacist can apply an invoice-level percentage discount
-- [ ] **POS-09**: System computes global charges (percentage charges applied after discount, fixed charges applied once per invoice)
-- [ ] **POS-10**: Pharmacist can process payment via Cash (with change due calculation), Card, Mobile Payment (bKash/Nagad), or Split Payment
-- [ ] **POS-11**: System executes atomic checkout transaction (counter increment, invoice creation, stock deduction with $gte guard, ledger entry)
-- [ ] **POS-12**: System generates sequential gap-free invoice numbers (INV-000001) via atomic database counters
-- [ ] **POS-13**: System creates an immutable invoice snapshot storing item names, batch numbers, expiry dates, units, prices, and override flags
-- [ ] **POS-14**: Pharmacist can print thermal receipts (58mm/80mm) formatted via browser print stylesheet (@page CSS)
-- [ ] **POS-15**: All monetary calculations use Decimal128 precision with unrounded intermediate math and 2dp round-half-up grand totals
+- [x] **POS-01**: Pharmacist can use a fast, keyboard/touch-optimized billing interface with autofocus and shortcut keys
+- [x] **POS-02**: System automatically suggests the earliest-expiring batch (FEFO order) when an item is selected
+- [x] **POS-03**: Pharmacist can select a non-FEFO batch without being blocked, automatically flagging the invoice line item
+- [x] **POS-04**: Pharmacist can select sale unit (piece, strip, box) with automatic price and piece-quantity calculation
+- [x] **POS-05**: Pharmacist can override unit price on any line item (never blocked, recorded on invoice and logged)
+- [x] **POS-06**: Pharmacist can manage cart line items (add, edit quantity/unit, remove, instant line subtotal)
+- [x] **POS-07**: Pharmacist can hold current bill to server and resume any held bill later from any terminal
+- [x] **POS-08**: Pharmacist can apply an invoice-level percentage discount
+- [x] **POS-09**: System computes global charges (percentage charges applied after discount, fixed charges applied once per invoice)
+- [x] **POS-10**: Pharmacist can process payment via Cash (with change due calculation), Card, Mobile Payment (bKash/Nagad), or Split Payment
+- [x] **POS-11**: System executes atomic checkout transaction (counter increment, invoice creation, stock deduction with $gte guard, ledger entry)
+- [x] **POS-12**: System generates sequential gap-free invoice numbers (INV-000001) via atomic database counters
+- [x] **POS-13**: System creates an immutable invoice snapshot storing item names, batch numbers, expiry dates, units, prices, and override flags
+- [x] **POS-14**: Pharmacist can print thermal receipts (58mm/80mm) formatted via browser print stylesheet (@page CSS)
+- [x] **POS-15**: All monetary calculations use Decimal128 precision with unrounded intermediate math and 2dp round-half-up grand totals
 
 ### Returns & Credit Notes
 
@@ -147,21 +147,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INVT-10 | Phase 2 | Complete |
 | INVT-11 | Phase 2 | Complete |
 | INVT-12 | Phase 2 | Complete |
-| POS-01 | Phase 3 | Pending |
-| POS-02 | Phase 3 | Pending |
-| POS-03 | Phase 3 | Pending |
-| POS-04 | Phase 3 | Pending |
-| POS-05 | Phase 3 | Pending |
-| POS-06 | Phase 3 | Pending |
-| POS-07 | Phase 3 | Pending |
-| POS-08 | Phase 3 | Pending |
-| POS-09 | Phase 3 | Pending |
-| POS-10 | Phase 3 | Pending |
-| POS-11 | Phase 3 | Pending |
-| POS-12 | Phase 3 | Pending |
-| POS-13 | Phase 3 | Pending |
-| POS-14 | Phase 3 | Pending |
-| POS-15 | Phase 3 | Pending |
+| POS-01 | Phase 3 | Complete |
+| POS-02 | Phase 3 | Complete |
+| POS-03 | Phase 3 | Complete |
+| POS-04 | Phase 3 | Complete |
+| POS-05 | Phase 3 | Complete |
+| POS-06 | Phase 3 | Complete |
+| POS-07 | Phase 3 | Complete |
+| POS-08 | Phase 3 | Complete |
+| POS-09 | Phase 3 | Complete |
+| POS-10 | Phase 3 | Complete |
+| POS-11 | Phase 3 | Complete |
+| POS-12 | Phase 3 | Complete |
+| POS-13 | Phase 3 | Complete |
+| POS-14 | Phase 3 | Complete |
+| POS-15 | Phase 3 | Complete |
 | RET-01 | Phase 4 | Pending |
 | RET-02 | Phase 4 | Pending |
 | RET-03 | Phase 4 | Pending |

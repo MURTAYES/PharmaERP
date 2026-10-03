@@ -7,6 +7,7 @@ import itemRoutes from './itemRoutes.js';
 import batchRoutes from './batchRoutes.js';
 import stockAdjustmentRoutes from './stockAdjustmentRoutes.js';
 import alertRoutes from './alertRoutes.js';
+import { posRouter } from './posRoutes.js';
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use('/items', itemRoutes);
 router.use('/batches', batchRoutes);
 router.use('/stock-adjustments', stockAdjustmentRoutes);
 router.use('/alerts', alertRoutes);
+router.use('/pos', posRouter);
 
 router.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'PharmaERP API' });

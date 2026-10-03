@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from './auth.js';
 export const SENSITIVE_PHARMACIST_FIELDS = new Set([
   'purchasePrice',
   'purchasePricePerPiece',
+  'purchaseCostPerPiece',
   'cost',
   'costPrice',
   'unitCost',

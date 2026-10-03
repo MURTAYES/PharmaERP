@@ -12,7 +12,7 @@ PharmaERP is delivered in vertical end-to-end MVP slices. Each phase delivers a 
 
 - [x] **Phase 1: Core Foundation & Auth (End-to-End)** - Working app shell, MongoDB Atlas connection, JWT authentication, RBAC with field-stripping serializer, user management UI, pharmacy settings UI, and audit logging.
 - [x] **Phase 2: Inventory & Stock Management (End-to-End)** - Medicine catalog, unit conversion hierarchies, MRP, type-ahead search, batch stock receiving UI with duplicate merging, stock buckets, manual adjustments, and live expiry/low-stock alerts.
-- [ ] **Phase 3: Point of Sale & Billing (End-to-End)** - Counter billing interface, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume bills, discounts, charges, atomic checkout with $gte guard, sequential invoices, and thermal receipt printing.
+- [x] **Phase 3: Point of Sale & Billing (End-to-End)** - Counter billing interface, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume bills, discounts, charges, atomic checkout with $gte guard, sequential invoices, and thermal receipt printing.
 - [ ] **Phase 4: Returns & Credit Notes (End-to-End)** - Invoice lookup for sales returns, stock bucket destination routing, proportional refund calculations, sequential credit notes, and supplier return invoices.
 - [ ] **Phase 5: Analytics & Reporting Suite (End-to-End)** - Real-time owner dashboard, sales reports, profit/loss analysis, price override audit, non-FEFO report, stock valuation, movement ledger, and CSV export.
 - [ ] **Phase 6: Hardening, Integration & Deployment** - End-to-end workflow verification, field-leak security audits, concurrency race testing, backup scripts, and production deployment configuration.
@@ -70,11 +70,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: Invoicing Data Models, Pricing Engine with Decimal.js, and Sequential Counter Service
-- [ ] 03-02: Atomic POS Checkout Transaction Service, FEFO Batch API, and Stock Guard
-- [ ] 03-03: Server-Side Held Bills API and Multi-Terminal Cart Synchronization
-- [ ] 03-04: High-Speed Counter POS Billing UI with Cart Management, FEFO Selector, Price Overrides & Keyboard Controls
-- [ ] 03-05: Payment Processing Modal, Thermal Receipt Print Engine, and Invoice History
+- [x] 03-01: Invoicing Data Models, Pricing Engine with Decimal.js, and Sequential Counter Service
+- [x] 03-02: Atomic POS Checkout Transaction Service, FEFO Batch API, and Stock Guard
+- [x] 03-03: Server-Side Held Bills API and Multi-Terminal Cart Synchronization
+- [x] 03-04: High-Speed Counter POS Billing UI with Cart Management, FEFO Selector, Price Overrides & Keyboard Controls
+- [x] 03-05: Payment Processing Modal, Thermal Receipt Print Engine, and Invoice History
 
 ### Phase 4: Returns & Credit Notes (End-to-End)
 **Goal**: Deliver a complete sales return and supplier return workflow allowing item returns against invoices, destination stock bucket routing, proportional refund calculation, sequential credit notes, and supplier return invoices.
@@ -137,8 +137,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Foundation & Auth (End-to-End) | 3/3 | Complete | 2026-10-03 |
-| 2. Inventory & Stock Management (End-to-End) | 0/4 | Not started | - |
-| 3. Point of Sale & Billing (End-to-End) | 0/5 | Not started | - |
+| 2. Inventory & Stock Management (End-to-End) | 4/4 | Complete | 2026-10-03 |
+| 3. Point of Sale & Billing (End-to-End) | 5/5 | Complete | 2026-10-03 |
 | 4. Returns & Credit Notes (End-to-End) | 0/3 | Not started | - |
 | 5. Analytics & Reporting Suite (End-to-End) | 0/4 | Not started | - |
 | 6. Hardening, Integration & Deployment | 0/2 | Not started | - |

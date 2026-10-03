@@ -25,12 +25,17 @@ export const Counter: Model<ICounter> =
 export async function getNextSequence(
   counterId: string,
   prefix: string = 'MED',
-  padLength: number = 6
+  padLength: number = 6,
+  session?: mongoose.ClientSession
 ): Promise<string> {
+  const options: mongoose.QueryOptions = { new: true, upsert: true };
+  if (session) {
+    options.session = session;
+  }
   const counter = await Counter.findByIdAndUpdate(
     counterId,
     { $inc: { seq: 1 } },
-    { new: true, upsert: true }
+    options
   );
   const numStr = String(counter.seq).padStart(padLength, '0');
   return `${prefix}-${numStr}`;

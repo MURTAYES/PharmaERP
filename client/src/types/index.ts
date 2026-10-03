@@ -120,3 +120,109 @@ export interface AlertSummary {
   lowStockCount: number;
   totalAlerts: number;
 }
+
+export interface InvoiceLineItem {
+  itemId: string;
+  tradeName: string;
+  genericName: string;
+  batchId: string;
+  batchNumber: string;
+  expiryDate: string;
+  unit: 'piece' | 'strip' | 'box';
+  unitHierarchySnapshot: {
+    piecesPerStrip: number;
+    stripsPerBox: number;
+  };
+  quantity: number;
+  quantityPieces: number;
+  unitPrice: string;
+  unitPricePerPiece: string;
+  lineTotal: string;
+  purchaseCostPerPiece?: string;
+  isPriceOverridden: boolean;
+  originalUnitPrice?: string;
+  priceOverrideVariance?: string;
+  isNonFefo: boolean;
+  suggestedFefoBatchNumber?: string;
+}
+
+export interface InvoiceCharge {
+  name: string;
+  type: 'percentage' | 'fixed';
+  rate: string;
+  amount: string;
+}
+
+export interface InvoicePayment {
+  method: 'cash' | 'card' | 'mfs' | 'split';
+  cashTendered?: string;
+  changeDue?: string;
+  mfsProvider?: 'bkash' | 'nagad' | 'rocket' | 'upay';
+  mfsTransactionId?: string;
+  cardLast4?: string;
+  cardType?: string;
+  splitDetails?: {
+    cashAmount?: string;
+    cardAmount?: string;
+    mfsAmount?: string;
+  };
+}
+
+export interface Invoice {
+  _id: string;
+  invoiceNumber: string;
+  billedBy: string;
+  billedByName: string;
+  customerName?: string;
+  customerPhone?: string;
+  lines: InvoiceLineItem[];
+  subtotal: string;
+  discountPercent: string;
+  discountAmount: string;
+  charges: InvoiceCharge[];
+  totalCharges: string;
+  grandTotal: string;
+  payment: InvoicePayment;
+  status: 'PAID' | 'RETURNED_PARTIAL' | 'RETURNED_FULL';
+  hasPriceOverride: boolean;
+  hasNonFefoBatch: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HeldBillLine {
+  itemId: string;
+  tradeName: string;
+  genericName: string;
+  batchId: string;
+  batchNumber: string;
+  expiryDate: string;
+  unit: 'piece' | 'strip' | 'box';
+  unitHierarchy: {
+    piecesPerStrip: number;
+    stripsPerBox: number;
+  };
+  quantity: number;
+  quantityPieces: number;
+  unitPrice: string;
+  mrpPerPiece: string;
+  isPriceOverridden: boolean;
+  originalUnitPrice?: string;
+  isNonFefo: boolean;
+  suggestedFefoBatchNumber?: string;
+}
+
+export interface HeldBill {
+  _id: string;
+  billReference: string;
+  heldBy: string;
+  heldByName: string;
+  customerName?: string;
+  customerPhone?: string;
+  lines: HeldBillLine[];
+  discountPercent: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
