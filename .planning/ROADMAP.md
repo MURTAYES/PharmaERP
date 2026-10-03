@@ -10,7 +10,7 @@ PharmaERP is delivered in vertical end-to-end MVP slices. Each phase delivers a 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Core Foundation & Auth (End-to-End)** - Working app shell, MongoDB Atlas connection, JWT authentication, RBAC with field-stripping serializer, user management UI, pharmacy settings UI, and audit logging.
+- [x] **Phase 1: Core Foundation & Auth (End-to-End)** - Working app shell, MongoDB Atlas connection, JWT authentication, RBAC with field-stripping serializer, user management UI, pharmacy settings UI, and audit logging.
 - [ ] **Phase 2: Inventory & Stock Management (End-to-End)** - Medicine catalog, unit conversion hierarchies, MRP, type-ahead search, batch stock receiving UI with duplicate merging, stock buckets, manual adjustments, and live expiry/low-stock alerts.
 - [ ] **Phase 3: Point of Sale & Billing (End-to-End)** - Counter billing interface, FEFO batch suggestion with non-FEFO flagging, price overrides, cart management, hold/resume bills, discounts, charges, atomic checkout with $gte guard, sequential invoices, and thermal receipt printing.
 - [ ] **Phase 4: Returns & Credit Notes (End-to-End)** - Invoice lookup for sales returns, stock bucket destination routing, proportional refund calculations, sequential credit notes, and supplier return invoices.
@@ -32,9 +32,9 @@ PharmaERP is delivered in vertical end-to-end MVP slices. Each phase delivers a 
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Fullstack project setup, MongoDB Atlas connection, JWT auth system, and RBAC with field-stripping serializer middleware
-- [ ] 01-02: Pharmacy settings, category management, user management APIs, and append-only audit log engine
-- [ ] 01-03: Responsive web application shell, login view, user management interface, settings panel, and audit log viewer
+- [x] 01-01: Fullstack project setup, MongoDB Atlas connection, JWT auth system, and RBAC with field-stripping serializer middleware
+- [x] 01-02: Pharmacy settings, category management, user management APIs, and append-only audit log engine
+- [x] 01-03: Responsive web application shell, login view, user management interface, settings panel, and audit log viewer
 
 ### Phase 2: Inventory & Stock Management (End-to-End)
 **Goal**: Deliver a complete end-to-end inventory management system where users can create medicines with multi-unit hierarchies, search via type-ahead (<300ms), receive stock by batch with duplicate merging, manage stock buckets, and view real-time expiry/low-stock alerts.
@@ -136,7 +136,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Foundation & Auth (End-to-End) | 0/3 | Not started | - |
+| 1. Core Foundation & Auth (End-to-End) | 3/3 | Complete | 2026-10-03 |
 | 2. Inventory & Stock Management (End-to-End) | 0/4 | Not started | - |
 | 3. Point of Sale & Billing (End-to-End) | 0/5 | Not started | - |
 | 4. Returns & Credit Notes (End-to-End) | 0/3 | Not started | - |

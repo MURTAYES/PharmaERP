@@ -9,11 +9,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication & Access Control
 
-- [ ] **AUTH-01**: User can authenticate with username and password using JWT with bcrypt hashing
-- [ ] **AUTH-02**: Role-based access control enforces Owner (full administrative access) vs Pharmacist (counter operations only)
-- [ ] **AUTH-03**: Rate limiting protects authentication and sensitive API endpoints
-- [ ] **AUTH-04**: User session persists across browser refresh with secure token refresh and logout
-- [ ] **AUTH-05**: Server-side field serializer strips purchase price, cost, profit, and valuation fields from pharmacist API responses
+- [x] **AUTH-01**: User can authenticate with username and password using JWT with bcrypt hashing
+- [x] **AUTH-02**: Role-based access control enforces Owner (full administrative access) vs Pharmacist (counter operations only)
+- [x] **AUTH-03**: Rate limiting protects authentication and sensitive API endpoints
+- [x] **AUTH-04**: User session persists across browser refresh with secure token refresh and logout
+- [x] **AUTH-05**: Server-side field serializer strips purchase price, cost, profit, and valuation fields from pharmacist API responses
 
 ### Inventory & Stock Management
 
@@ -74,13 +74,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Settings & System Administration
 
-- [ ] **SYS-01**: Owner can configure pharmacy profile (name, address, phone, receipt header/footer, currency symbol)
-- [ ] **SYS-02**: Owner can configure receipt printing settings (58mm vs 80mm default width, header display)
-- [ ] **SYS-03**: Owner can configure global invoice charges (tax/VAT percentages, fixed fees, active toggles)
-- [ ] **SYS-04**: Owner can configure expiry alert threshold windows (default 90, 60, 30 days) and low stock defaults
-- [ ] **SYS-05**: Owner can manage medicine categories
-- [ ] **SYS-06**: Owner can manage user accounts (create, assign role, reset password, activate/deactivate)
-- [ ] **SYS-07**: System maintains an append-only immutable audit log for authentication, price overrides, stock adjustments, settings changes, and supplier returns
+- [x] **SYS-01**: Owner can configure pharmacy profile (name, address, phone, receipt header/footer, currency symbol)
+- [x] **SYS-02**: Owner can configure receipt printing settings (58mm vs 80mm default width, header display)
+- [x] **SYS-03**: Owner can configure global invoice charges (tax/VAT percentages, fixed fees, active toggles)
+- [x] **SYS-04**: Owner can configure expiry alert threshold windows (default 90, 60, 30 days) and low stock defaults
+- [x] **SYS-05**: Owner can manage medicine categories
+- [x] **SYS-06**: Owner can manage user accounts (create, assign role, reset password, activate/deactivate)
+- [x] **SYS-07**: System maintains an append-only immutable audit log for authentication, price overrides, stock adjustments, settings changes, and supplier returns
 
 ## v2 Requirements
 
@@ -123,18 +123,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
-| AUTH-05 | Phase 1 | Pending |
-| SYS-01 | Phase 1 | Pending |
-| SYS-02 | Phase 1 | Pending |
-| SYS-03 | Phase 1 | Pending |
-| SYS-04 | Phase 1 | Pending |
-| SYS-05 | Phase 1 | Pending |
-| SYS-06 | Phase 1 | Pending |
-| SYS-07 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
+| AUTH-04 | Phase 1 | Complete |
+| AUTH-05 | Phase 1 | Complete |
+| SYS-01 | Phase 1 | Complete |
+| SYS-02 | Phase 1 | Complete |
+| SYS-03 | Phase 1 | Complete |
+| SYS-04 | Phase 1 | Complete |
+| SYS-05 | Phase 1 | Complete |
+| SYS-06 | Phase 1 | Complete |
+| SYS-07 | Phase 1 | Complete |
 | INVT-01 | Phase 2 | Pending |
 | INVT-02 | Phase 2 | Pending |
 | INVT-03 | Phase 2 | Pending |
