@@ -2,7 +2,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-dotenv.config(); // fallback to current dir
+dotenv.config({ path: path.resolve(process.cwd(), '..', '.env') });
+dotenv.config(); // fallback
 
 export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
