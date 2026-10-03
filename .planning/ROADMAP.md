@@ -47,7 +47,7 @@ Plans:
   3. User can receive stock per batch; duplicate batches merge cleanly; pharmacist entries auto-flag cost as missing.
   4. Stock is visible across sellable, damaged, and expired buckets, and Owner can execute manual adjustments with mandatory audit reasons.
   5. UI displays visual alert badges and notifications for low-stock items and batches in 90/60/30 day expiry windows.
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 - [ ] 02-01: Item master and unit conversion data models, Decimal128 schema handling, and type-ahead search API
