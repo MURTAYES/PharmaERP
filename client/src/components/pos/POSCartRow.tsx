@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Batch } from '../../types';
 import { POSBatchSelectorModal } from './POSBatchSelectorModal';
@@ -52,6 +52,11 @@ export const POSCartRow: React.FC<POSCartRowProps> = ({
 }) => {
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [showPriceModal, setShowPriceModal] = useState(false);
+  const [qtyInput, setQtyInput] = useState<string>(String(line.quantity));
+
+  useEffect(() => {
+    setQtyInput(String(line.quantity));
+  }, [line.quantity]);
 
   const expiryDateObj = new Date(line.expiryDate);
   const formattedExpiry = format(expiryDateObj, 'MM/yy');
@@ -124,20 +129,35 @@ export const POSCartRow: React.FC<POSCartRowProps> = ({
               −
             </button>
             <input
-              type="number"
-              step="1"
-              min="1"
-              value={line.quantity}
-              onKeyDown={(e) => {
-                if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
-                  e.preventDefault();
+              type="text"
+              inputMode="numeric"
+              value={qtyInput}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                setQtyInput(cleaned);
+                if (cleaned !== '') {
+                  const val = parseInt(cleaned, 10);
+                  if (val > 0) {
+                    onUpdateQuantity(line.id, val);
+                  }
                 }
               }}
-              onChange={(e) => {
-                const val = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10);
-                onUpdateQuantity(line.id, isNaN(val) ? 1 : Math.max(1, val));
+              onBlur={() => {
+                const val = parseInt(qtyInput, 10);
+                if (isNaN(val) || val < 1) {
+                  setQtyInput('1');
+                  onUpdateQuantity(line.id, 1);
+                } else {
+                  setQtyInput(String(val));
+                }
               }}
-              className="w-12 h-6 text-center bg-transparent border-none text-xs font-mono font-bold text-[#002F34] focus:outline-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className="w-12 h-6 text-center bg-transparent hover:bg-[#F3F7F6] focus:bg-white focus:ring-1 focus:ring-[#002F34] rounded text-xs font-mono font-bold text-[#002F34] focus:outline-none transition-all"
             />
             <button
               type="button"

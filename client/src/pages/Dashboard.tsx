@@ -63,8 +63,7 @@ export function Dashboard() {
   const companySales = kpiData?.companySales || [];
   const genericSales = kpiData?.genericSales || [];
   const weeklySales = kpiData?.weeklySales || [];
-  const fromCache = kpiData?.fromCache;
-  const calculatedAt = kpiData?.calculatedAt;
+
   const criticalBatches = expiringData?.batches || [];
   const lowStockItems = lowStockData?.items || [];
   const heldBills = heldBillsData?.heldBills || [];
@@ -409,18 +408,7 @@ export function Dashboard() {
 
         {/* Filter Dropdown & Cache Refresh Controls */}
         <div className="flex items-center space-x-3">
-          {/* Cache Status Badge */}
-          {fromCache ? (
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-[#E7F6F3] text-[#006059] border border-[#C5E8E0]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00A887]" />
-              Cached ({calculatedAt ? new Date(calculatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recent'})
-            </span>
-          ) : (
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Live Analytics
-            </span>
-          )}
+
 
           <button
             onClick={() => refetchKPIs()}

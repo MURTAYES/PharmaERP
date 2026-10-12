@@ -7,6 +7,14 @@ export type DecimalInstance = InstanceType<typeof Decimal>;
  */
 export function cleanNumericString(val: any): string {
   if (val === null || val === undefined) return '';
+  if (typeof val === 'object') {
+    if (val.$numberDecimal !== undefined) return String(val.$numberDecimal).trim();
+    if (val.value !== undefined) return String(val.value).trim();
+    if (typeof val.toString === 'function') {
+      const s = val.toString();
+      if (s !== '[object Object]') return s.trim();
+    }
+  }
   const str = String(val).trim();
   // Strip out currency symbols like ৳, $, commas, etc.
   const cleaned = str.replace(/[^0-9.-]/g, '');

@@ -41,12 +41,7 @@ export function Header() {
 
       {/* Right Header Actions & User Profile */}
       <div className="flex items-center space-x-4 sm:space-x-5">
-        {/* Currency / Timezone Badge */}
-        <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-[#F3F7F6] text-xs font-semibold text-slate-600">
-          <span>BDT (৳)</span>
-          <span className="text-slate-300">•</span>
-          <span className="text-[11px] text-slate-500">Asia/Dhaka</span>
-        </div>
+
 
         {/* User Information with Dropdown */}
         <div className="relative" ref={dropdownRef}>

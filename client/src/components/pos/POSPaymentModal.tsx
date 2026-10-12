@@ -50,7 +50,7 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
     setSplitCard('');
   }, [safeGrandTotalStr, isOpen]);
 
-  // Cash change due calculation
+  // Calculations
   const grandTotalDec = safeDecimal(grandTotal);
   const cashTenderedDec = safeDecimal(cashTendered);
   const isSufficient = cashTenderedDec.greaterThanOrEqualTo(grandTotalDec);
@@ -128,13 +128,12 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
       }
 
       if (e.key === 'Enter') {
-        // Prevent default submit behavior
         e.preventDefault();
         if (loading) return;
         if (e.ctrlKey || e.metaKey) {
-          handleSubmit(false); // Complete Sale
+          handleSubmit(false);
         } else {
-          handleSubmit(true); // Complete & Print (standard quick transaction)
+          handleSubmit(true);
         }
       }
     };
@@ -146,117 +145,105 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#002F34]/40 backdrop-blur-[6px] transition-all">
-      <div className="relative w-full max-w-[560px] bg-white rounded-[28px] shadow-2xl border border-white/80 overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
-        <div className="px-6 py-4.5 bg-white border-b border-[#E8F0ED] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#002F34] text-white flex items-center justify-center shadow-md shadow-[#002F34]/20">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-[#002F34]">Payment & Checkout (F4)</h2>
-              <p className="text-xs text-[#5F7D7A]">Finalize billing transaction and tender cash/digital payment</p>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#002F34]/40 backdrop-blur-xs transition-all animate-in fade-in duration-150">
+      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col">
+        {/* Clean Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+          <div>
+            <h2 className="text-base font-bold text-[#002F34]">Payment & Checkout</h2>
+            <p className="text-xs text-slate-400">Select method and tender payment</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[#5F7D7A] hover:text-[#002F34] hover:bg-[#F2F7F5] transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 overflow-y-auto custom-scrollbar space-y-5">
-          {/* Total Payable Highlight Card */}
-          <div className="p-4.5 bg-[#F1F6F4] border border-[#D5E3DE] rounded-2xl flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-bold text-[#5C7470] uppercase tracking-wider block">
-                Total Amount Payable
-              </span>
-              <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-lg font-bold text-[#007062]">৳</span>
-                <span className="text-3xl font-black font-mono text-[#002F34] tracking-tight">
-                  {safeGrandTotalStr}
-                </span>
-              </div>
-            </div>
-            {(customerName || customerPhone) && (
-              <div className="text-right">
-                <span className="text-xs font-bold text-[#002F34] block">{customerName || 'Walk-in Customer'}</span>
-                <span className="text-xs text-[#5F7D7A] font-mono">{customerPhone}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Payment Method Tabs */}
+        {/* Hero Payable Card */}
+        <div className="mx-6 mt-5 p-4 bg-[#E7F6F3]/50 rounded-2xl flex items-center justify-between border border-[#C5E8E0]/40">
           <div>
-            <label className="block text-xs font-bold text-[#002F34] mb-2">Select Payment Method</label>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { id: 'cash', label: 'Cash', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
-                { id: 'mfs', label: 'MFS (bKash)', icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z' },
-                { id: 'card', label: 'Card / POS', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
-                { id: 'split', label: 'Split Pay', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setMethod(m.id as any)}
-                  className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                    method === m.id
-                      ? 'bg-[#002F34] text-white border-[#002F34] shadow-sm font-bold'
-                      : 'bg-[#F8FAF9] text-[#5F7D7A] border-[#D5E3DE] hover:bg-[#F0FAF7] hover:text-[#002F34]'
-                  }`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={m.icon} />
-                  </svg>
-                  <span className="text-xs">{m.label}</span>
-                </button>
-              ))}
+            <span className="text-[10px] font-bold text-[#006059] uppercase tracking-wider block">
+              Total Payable
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-2xl font-extrabold font-mono text-[#002F34]">
+                ৳ {safeGrandTotalStr}
+              </span>
             </div>
           </div>
+          {(customerName || customerPhone) && (
+            <div className="text-right">
+              <span className="text-xs font-bold text-[#002F34] block">{customerName || 'Walk-in'}</span>
+              {customerPhone && <span className="text-[11px] text-slate-400 font-mono">{customerPhone}</span>}
+            </div>
+          )}
+        </div>
 
-          {/* Method 1: Cash */}
+        {/* Method Segmented Pills */}
+        <div className="px-6 mt-4">
+          <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl">
+            {[
+              { id: 'cash', label: 'Cash' },
+              { id: 'mfs', label: 'MFS' },
+              { id: 'card', label: 'Card' },
+              { id: 'split', label: 'Split' },
+            ].map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setMethod(m.id as any)}
+                className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  method === m.id
+                    ? 'bg-[#002F34] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Body Content */}
+        <div className="p-6 space-y-4">
+          {/* Method: Cash */}
           {method === 'cash' && (
-            <div className="space-y-4 p-4.5 bg-[#F8FAF9] rounded-2xl border border-[#E8EFEA]">
+            <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-[#002F34] mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Cash Tendered (৳)
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center font-bold text-[#007062] text-base">৳</span>
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center font-bold text-slate-400 text-sm">৳</span>
                   <input
                     type="number"
-                    step="0.5"
+                    step="1"
                     min="0"
                     value={cashTendered}
                     onChange={(e) => setCashTendered(e.target.value)}
                     autoFocus
-                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-[#D5E3DE] rounded-xl text-lg font-bold font-mono text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
+                    className="w-full pl-7 pr-3 py-2 bg-[#F8FAF9] focus:bg-white border border-slate-200 focus:border-[#002F34] rounded-xl text-base font-bold font-mono text-[#002F34] focus:outline-none transition-all"
                   />
                 </div>
               </div>
 
-              {/* Quick Cash Buttons */}
-              <div className="flex flex-wrap gap-2">
+              {/* Quick Cash Chips */}
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => handleQuickCash('exact')}
-                  className="px-3 py-1.5 text-xs font-bold bg-white border border-[#97D8D0] text-[#006059] rounded-xl hover:bg-[#E7F6F3] transition-colors cursor-pointer shadow-2xs"
+                  className="px-2.5 py-1 text-xs font-bold bg-[#E7F6F3] text-[#006059] hover:bg-[#D5EFEA] rounded-lg transition-colors cursor-pointer"
                 >
-                  Exact (৳{formatMoney(grandTotal, 0)})
+                  Exact
                 </button>
-                {[50, 100, 200, 500, 1000, 2000].map((amt) => (
+                {[500, 1000, 2000].map((amt) => (
                   <button
                     key={amt}
                     type="button"
                     onClick={() => handleQuickCash(amt)}
-                    className="px-3 py-1.5 text-xs font-semibold bg-white border border-[#D5E3DE] text-[#002F34] rounded-xl hover:border-[#002F34] transition-colors cursor-pointer shadow-2xs"
+                    className="px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
                   >
                     ৳{amt}
                   </button>
@@ -265,42 +252,42 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
 
               {/* Change Due / Shortage Banner */}
               <div
-                className={`p-3.5 rounded-xl border flex items-center justify-between ${
+                className={`p-3 rounded-xl flex items-center justify-between ${
                   isSufficient
-                    ? 'bg-[#E1F6F0] border-[#BCE8DD] text-[#004D40]'
-                    : 'bg-rose-50 border-rose-200 text-rose-900'
+                    ? 'bg-emerald-50 text-emerald-900 border border-emerald-200/80'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200/80'
                 }`}
               >
                 <span className="text-xs font-bold uppercase tracking-wider">
-                  {isSufficient ? 'Change Due to Customer:' : 'Shortage (Underpaid):'}
+                  {isSufficient ? 'Change Due' : 'Shortage'}
                 </span>
-                <span className="text-xl font-bold font-mono">
+                <span className="text-lg font-bold font-mono">
                   ৳ {isSufficient ? changeDue : balanceRemaining}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Method 2: MFS */}
+          {/* Method: MFS */}
           {method === 'mfs' && (
-            <div className="space-y-4 p-4.5 bg-[#F8FAF9] rounded-2xl border border-[#E8EFEA]">
+            <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-[#002F34] mb-2">MFS Provider</label>
-                <div className="grid grid-cols-4 gap-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">MFS Provider</label>
+                <div className="grid grid-cols-4 gap-1.5">
                   {[
-                    { id: 'bkash', label: 'bKash', color: 'hover:border-pink-500' },
-                    { id: 'nagad', label: 'Nagad', color: 'hover:border-orange-500' },
-                    { id: 'rocket', label: 'Rocket', color: 'hover:border-purple-500' },
-                    { id: 'upay', label: 'Upay', color: 'hover:border-blue-500' },
+                    { id: 'bkash', label: 'bKash' },
+                    { id: 'nagad', label: 'Nagad' },
+                    { id: 'rocket', label: 'Rocket' },
+                    { id: 'upay', label: 'Upay' },
                   ].map((p) => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => setMfsProvider(p.id as any)}
-                      className={`py-2.5 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer uppercase ${
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                         mfsProvider === p.id
                           ? 'bg-[#002F34] text-white border-[#002F34]'
-                          : `bg-white text-[#5F7D7A] border-[#D5E3DE] ${p.color}`
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                       }`}
                     >
                       {p.label}
@@ -310,29 +297,29 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#002F34] mb-1.5">
-                  Transaction TrxID / Reference <span className="text-[#7A9894] font-normal">(Optional)</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  TrxID <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. 9J82KL09"
                   value={mfsTransactionId}
                   onChange={(e) => setMfsTransactionId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-[#D5E3DE] rounded-xl text-sm font-mono font-bold text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
+                  className="w-full px-3 py-2 bg-[#F8FAF9] focus:bg-white border border-slate-200 focus:border-[#002F34] rounded-xl text-xs font-mono font-bold text-[#002F34] focus:outline-none transition-all"
                 />
               </div>
             </div>
           )}
 
-          {/* Method 3: Card */}
+          {/* Method: Card */}
           {method === 'card' && (
-            <div className="space-y-4 p-4.5 bg-[#F8FAF9] rounded-2xl border border-[#E8EFEA]">
+            <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-[#002F34] mb-1.5">Card Network</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Card Network</label>
                 <select
                   value={cardType}
                   onChange={(e) => setCardType(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-[#D5E3DE] rounded-xl text-sm font-semibold text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
+                  className="w-full px-3 py-2 bg-[#F8FAF9] focus:bg-white border border-slate-200 focus:border-[#002F34] rounded-xl text-xs font-semibold text-[#002F34] focus:outline-none transition-all"
                 >
                   <option value="Visa / Mastercard">Visa / Mastercard</option>
                   <option value="DBBL Nexus">DBBL Nexus</option>
@@ -342,8 +329,8 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#002F34] mb-1.5">
-                  Card Last 4 Digits <span className="text-[#7A9894] font-normal">(Optional)</span>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Last 4 Digits <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
                 <input
                   type="text"
@@ -351,47 +338,47 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
                   maxLength={4}
                   value={cardLast4}
                   onChange={(e) => setCardLast4(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="w-full px-4 py-2.5 bg-white border border-[#D5E3DE] rounded-xl text-sm font-mono font-bold text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
+                  className="w-full px-3 py-2 bg-[#F8FAF9] focus:bg-white border border-slate-200 focus:border-[#002F34] rounded-xl text-xs font-mono font-bold text-[#002F34] focus:outline-none transition-all"
                 />
               </div>
             </div>
           )}
 
-          {/* Method 4: Split */}
+          {/* Method: Split */}
           {method === 'split' && (
-            <div className="space-y-3 p-4.5 bg-[#F8FAF9] rounded-2xl border border-[#E8EFEA]">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-2.5">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-[#002F34] mb-1">Cash (৳)</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Cash (৳)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="0.00"
                     value={splitCash}
                     onChange={(e) => setSplitCash(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#D5E3DE] rounded-xl text-sm font-mono font-bold text-[#002F34] focus:outline-none focus:border-[#002F34]"
+                    className="w-full px-2.5 py-1.5 bg-[#F8FAF9] focus:bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-[#002F34] focus:outline-none focus:border-[#002F34]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#002F34] mb-1">MFS (৳)</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">MFS (৳)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="0.00"
                     value={splitMfs}
                     onChange={(e) => setSplitMfs(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#D5E3DE] rounded-xl text-sm font-mono font-bold text-[#002F34] focus:outline-none focus:border-[#002F34]"
+                    className="w-full px-2.5 py-1.5 bg-[#F8FAF9] focus:bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-[#002F34] focus:outline-none focus:border-[#002F34]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#002F34] mb-1">Card (৳)</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Card (৳)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="0.00"
                     value={splitCard}
                     onChange={(e) => setSplitCard(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#D5E3DE] rounded-xl text-sm font-mono font-bold text-[#002F34] focus:outline-none focus:border-[#002F34]"
+                    className="w-full px-2.5 py-1.5 bg-[#F8FAF9] focus:bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-[#002F34] focus:outline-none focus:border-[#002F34]"
                   />
                 </div>
               </div>
@@ -399,23 +386,23 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-white border-t border-[#E8F0ED] flex items-center justify-between">
+        {/* Clean Footer Actions */}
+        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2.5 rounded-xl border border-[#D5E3DE] text-xs font-bold text-[#5F7D7A] hover:text-[#002F34] hover:bg-[#F4F7F6] transition-colors"
+            className="px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
           >
-            Cancel
+            Cancel (Esc)
           </button>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => handleSubmit(false)}
               disabled={loading}
-              className="px-5 py-2.5 rounded-xl border border-[#002F34] text-xs font-bold text-[#002F34] hover:bg-[#002F34]/5 transition-colors"
+              className="px-4 py-2 text-xs font-bold text-[#002F34] bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-all cursor-pointer shadow-2xs"
             >
               Complete Sale
             </button>
@@ -423,12 +410,10 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
               type="button"
               onClick={() => handleSubmit(true)}
               disabled={loading}
-              className="px-5 py-2.5 rounded-xl bg-[#002F34] text-white text-xs font-bold shadow-md shadow-[#002F34]/20 hover:bg-[#012428] transition-all flex items-center gap-1.5"
+              className="px-4 py-2 text-xs font-bold text-white bg-[#002F34] hover:bg-[#073D43] rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-              Complete & Print
+              <span>Complete & Print</span>
+              <kbd className="text-[10px] bg-white/20 px-1 rounded font-mono">↵</kbd>
             </button>
           </div>
         </div>
