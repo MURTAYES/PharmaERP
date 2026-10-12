@@ -75,18 +75,70 @@ export async function getItems(req: Request, res: Response): Promise<void> {
       query.productCategory = productCategory;
     }
 
-    if (productName) {
-      query.tradeName = new RegExp(productName, 'i');
-    }
+    if (productName && genericName) {
+      const pRegex = new RegExp(productName, 'i');
+      const batchesWithCode = await Batch.find({
+        $or: [
+          { barcode: productName },
+          { qrCode: productName },
+          { barcode: pRegex },
+          { qrCode: pRegex },
+        ],
+      }).select('itemId').lean();
+      const bItemIds = batchesWithCode.map((b: any) => b.itemId);
 
-    if (genericName) {
+      query.$and = [
+        { genericName: new RegExp(genericName, 'i') },
+        {
+          $or: [
+            { tradeName: pRegex },
+            { genericName: pRegex },
+            { itemCode: pRegex },
+            { manufacturer: pRegex },
+            { brandName: pRegex },
+            { barcodes: productName },
+            { barcodes: pRegex },
+            { qrCode: productName },
+            { qrCode: pRegex },
+            ...(bItemIds.length > 0 ? [{ _id: { $in: bItemIds } }] : []),
+          ],
+        },
+      ];
+    } else if (productName) {
+      const pRegex = new RegExp(productName, 'i');
+      const batchesWithCode = await Batch.find({
+        $or: [
+          { barcode: productName },
+          { qrCode: productName },
+          { barcode: pRegex },
+          { qrCode: pRegex },
+        ],
+      }).select('itemId').lean();
+      const bItemIds = batchesWithCode.map((b: any) => b.itemId);
+
+      query.$or = [
+        { tradeName: pRegex },
+        { genericName: pRegex },
+        { itemCode: pRegex },
+        { manufacturer: pRegex },
+        { brandName: pRegex },
+        { barcodes: productName },
+        { barcodes: pRegex },
+        { qrCode: productName },
+        { qrCode: pRegex },
+        ...(bItemIds.length > 0 ? [{ _id: { $in: bItemIds } }] : []),
+      ];
+    } else if (genericName) {
       query.genericName = new RegExp(genericName, 'i');
-    }
-
-    if (search && !productName && !genericName) {
+    } else if (search) {
       const searchRegex = new RegExp(search, 'i');
       const batchesWithCode = await Batch.find({
-        $or: [{ barcode: search }, { qrCode: search }],
+        $or: [
+          { barcode: search },
+          { qrCode: search },
+          { barcode: searchRegex },
+          { qrCode: searchRegex },
+        ],
       }).select('itemId').lean();
       const bItemIds = batchesWithCode.map((b: any) => b.itemId);
 
@@ -97,7 +149,9 @@ export async function getItems(req: Request, res: Response): Promise<void> {
         { manufacturer: searchRegex },
         { brandName: searchRegex },
         { barcodes: search },
+        { barcodes: searchRegex },
         { qrCode: search },
+        { qrCode: searchRegex },
         ...(bItemIds.length > 0 ? [{ _id: { $in: bItemIds } }] : []),
       ];
     }
@@ -255,25 +309,47 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
     const searchStr = (productName || q || '').trim();
     let batchItemIds: any[] = [];
     if (searchStr) {
+      const sRegex = new RegExp(searchStr, 'i');
       const batchesWithCode = await Batch.find({
         $or: [
           { barcode: searchStr },
           { qrCode: searchStr },
+          { barcode: sRegex },
+          { qrCode: sRegex },
         ],
       }).select('itemId').lean();
       batchItemIds = batchesWithCode.map((b: any) => b.itemId);
     }
 
     if (productName && genericName) {
-      searchQuery.tradeName = new RegExp(productName, 'i');
-      searchQuery.genericName = new RegExp(genericName, 'i');
+      const pRegex = new RegExp(productName, 'i');
+      searchQuery.$and = [
+        { genericName: new RegExp(genericName, 'i') },
+        {
+          $or: [
+            { tradeName: pRegex },
+            { itemCode: pRegex },
+            { brandName: pRegex },
+            { manufacturer: pRegex },
+            { barcodes: productName },
+            { barcodes: pRegex },
+            { qrCode: productName },
+            { qrCode: pRegex },
+            ...(batchItemIds.length > 0 ? [{ _id: { $in: batchItemIds } }] : []),
+          ],
+        },
+      ];
     } else if (productName) {
       const pRegex = new RegExp(productName, 'i');
       searchQuery.$or = [
         { tradeName: pRegex },
+        { itemCode: pRegex },
         { brandName: pRegex },
+        { manufacturer: pRegex },
         { barcodes: productName },
+        { barcodes: pRegex },
         { qrCode: productName },
+        { qrCode: pRegex },
         ...(batchItemIds.length > 0 ? [{ _id: { $in: batchItemIds } }] : []),
       ];
     } else if (genericName) {
@@ -287,7 +363,9 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
         { manufacturer: anywhereRegex },
         { brandName: anywhereRegex },
         { barcodes: q },
+        { barcodes: anywhereRegex },
         { qrCode: q },
+        { qrCode: anywhereRegex },
         ...(batchItemIds.length > 0 ? [{ _id: { $in: batchItemIds } }] : []),
       ];
     }

@@ -93,7 +93,13 @@ export const Inventory: React.FC = () => {
         let filtered = res.items;
         if (productSearch.trim()) {
           const reg = new RegExp(productSearch.trim(), 'i');
-          filtered = filtered.filter((it) => reg.test(it.tradeName));
+          filtered = filtered.filter(
+            (it) =>
+              reg.test(it.tradeName) ||
+              (it.itemCode && reg.test(it.itemCode)) ||
+              (it.barcodes && it.barcodes.some((b) => reg.test(b))) ||
+              (it.qrCode && reg.test(it.qrCode))
+          );
         }
         if (genericSearch.trim()) {
           const reg = new RegExp(genericSearch.trim(), 'i');
@@ -114,7 +120,13 @@ export const Inventory: React.FC = () => {
         let extracted = Array.from(itemMap.values());
         if (productSearch.trim()) {
           const reg = new RegExp(productSearch.trim(), 'i');
-          extracted = extracted.filter((it) => reg.test(it.tradeName));
+          extracted = extracted.filter(
+            (it) =>
+              reg.test(it.tradeName) ||
+              (it.itemCode && reg.test(it.itemCode)) ||
+              (it.barcodes && it.barcodes.some((b) => reg.test(b))) ||
+              (it.qrCode && reg.test(it.qrCode))
+          );
         }
         if (genericSearch.trim()) {
           const reg = new RegExp(genericSearch.trim(), 'i');

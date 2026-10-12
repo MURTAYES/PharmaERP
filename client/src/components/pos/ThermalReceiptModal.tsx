@@ -97,8 +97,8 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
         >
           <div
             id="thermal-receipt"
-            className={`bg-white text-black p-5 font-mono text-[11px] leading-tight shadow-md border border-gray-200 select-text print:shadow-none print:border-none print:p-2 print:m-0 print:block ${
-              receiptWidth === '58mm' ? 'w-[58mm] text-[10px]' : 'w-[80mm]'
+            className={`bg-white text-black font-mono text-[11px] leading-tight shadow-md border border-gray-200 select-text print:shadow-none print:border-none print:p-2 print:m-0 print:block ${
+              receiptWidth === '58mm' ? 'w-[58mm] p-3 text-[10px]' : 'w-[80mm] p-5'
             }`}
           >
             {/* Pharmacy Header */}
@@ -224,7 +224,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
             {/* Footer */}
             <div className="receipt-section text-center pt-2.5 text-[9px] text-gray-700">
               <p>{settings?.receiptFooter || 'Thank you for choosing us! Get well soon.'}</p>
-              <p className="mt-1 font-mono text-[8px] tracking-widest text-gray-500">
+              <p className="mt-1 font-mono text-[7.5px] tracking-wider text-gray-500 whitespace-nowrap overflow-hidden">
                 * * * POWERED BY PHARMAERP * * *
               </p>
             </div>

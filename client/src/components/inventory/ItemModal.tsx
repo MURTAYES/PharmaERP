@@ -22,8 +22,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   const [category, setCategory] = useState('Tablet');
   const [productCategory, setProductCategory] = useState<'Medicine' | 'Baby food' | 'Non food' | 'Consumer'>('Medicine');
   const [brandName, setBrandName] = useState('');
-  const [customBrand, setCustomBrand] = useState('');
-  const [isCustomBrand, setIsCustomBrand] = useState(false);
   const [shelfLocation, setShelfLocation] = useState('');
   const [itemCode, setItemCode] = useState('');
   const [piecesPerBox, setPiecesPerBox] = useState('10');
@@ -104,14 +102,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       setCategory(itemToEdit.category || 'Tablet');
       setProductCategory(itemToEdit.productCategory || 'Medicine');
       const itemBrand = itemToEdit.brandName || itemToEdit.manufacturer || '';
-      if (itemBrand && !brands.includes(itemBrand)) {
-        setIsCustomBrand(true);
-        setCustomBrand(itemBrand);
-        setBrandName('__custom');
-      } else {
-        setIsCustomBrand(false);
-        setBrandName(itemBrand || (brands[0] || 'Square Pharmaceuticals'));
-      }
+      setBrandName(itemBrand || (brands[0] || 'Square Pharmaceuticals'));
       setShelfLocation(itemToEdit.shelfLocation || '');
       setItemCode(itemToEdit.itemCode || '');
       const pcsBox = itemToEdit.unitHierarchy?.piecesPerBox || itemToEdit.totalPiecesPerBox || 10;
@@ -126,9 +117,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       setGenericName('');
       setCategory(categories[0] || 'Tablet');
       setProductCategory('Medicine');
-      setIsCustomBrand(false);
       setBrandName(brands[0] || 'Square Pharmaceuticals');
-      setCustomBrand('');
       setShelfLocation('');
       setItemCode(`MED-${Math.floor(100000 + Math.random() * 900000)}`);
       setPiecesPerBox('10');
@@ -174,7 +163,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     setLoading(true);
 
     try {
-      const finalBrand = (isCustomBrand ? customBrand : brandName || customBrand || 'General').trim();
+      const finalBrand = (brandName || brands[0] || 'Square Pharmaceuticals').trim();
       const allBarcodes = [...barcodes];
       if (newBarcode.trim() && !allBarcodes.includes(newBarcode.trim())) {
         allBarcodes.push(newBarcode.trim());
@@ -259,11 +248,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-2.5">
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#E7F6F3] text-[#006059] border border-[#C5E8E0]">
-              <span className="w-2 h-2 rounded-full bg-[#00A887] ring-4 ring-[#00A887]/20"></span>
-              Sales Unit: Piece (pc)
-            </div>
-
             <button
               onClick={onClose}
               aria-label="Close modal"
@@ -379,56 +363,31 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                   <label className="block text-xs font-bold text-[#002F34]" htmlFor="brandSelect">
                     Brand Name <span className="text-rose-500">*</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomBrand(!isCustomBrand);
-                      if (!isCustomBrand) setBrandName('__custom');
-                      else setBrandName(brands[0] || '');
-                    }}
-                    className="text-[10px] font-semibold text-primary hover:underline"
-                  >
-                    {isCustomBrand ? 'Select from list' : '+ Custom brand'}
-                  </button>
                 </div>
-                {isCustomBrand ? (
-                  <input
-                    type="text"
+                <div className="relative">
+                  <select
+                    id="brandSelect"
                     required
-                    placeholder="Enter custom brand..."
-                    value={customBrand}
-                    onChange={(e) => setCustomBrand(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-[#DCE6E2] rounded-2xl text-sm font-semibold text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
-                  />
-                ) : (
-                  <div className="relative">
-                    <select
-                      id="brandSelect"
-                      required
-                      value={brandName}
-                      onChange={(e) => {
-                        if (e.target.value === '__custom') {
-                          setIsCustomBrand(true);
-                        } else {
-                          setBrandName(e.target.value);
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 bg-white border border-[#DCE6E2] rounded-2xl text-sm font-semibold text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] appearance-none cursor-pointer pr-10"
-                    >
-                      {brands.map((b) => (
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-[#DCE6E2] rounded-2xl text-sm font-semibold text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] appearance-none cursor-pointer pr-10"
+                  >
+                    {brands.length === 0 ? (
+                      <option value="">No brands found (Add in Settings)</option>
+                    ) : (
+                      brands.map((b) => (
                         <option key={b} value={b}>
                           {b}
                         </option>
-                      ))}
-                      <option value="__custom">+ Custom brand...</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#7A9894]">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                      ))
+                    )}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#7A9894]">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Dosage Category */}

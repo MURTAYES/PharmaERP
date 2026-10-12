@@ -103,19 +103,78 @@ export const SalesReturnModal: React.FC<SalesReturnModalProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery, selectedInvoice]);
 
+  const buildDraftForLine = (line: any): ReturnLineDraft => {
+    const pcsPerStrip = line.unitHierarchySnapshot?.piecesPerStrip || 1;
+    const stripsPerBox = line.unitHierarchySnapshot?.stripsPerBox || 1;
+    const totalPcsBox = pcsPerStrip * stripsPerBox;
+
+    let chosenUnit: 'piece' | 'strip' | 'box' = line.unit || 'piece';
+    let initialQty = line.originalQuantity || line.soldQuantityPieces || 1;
+    let calcPieces = initialQty;
+
+    if (chosenUnit === 'strip') calcPieces = initialQty * pcsPerStrip;
+    else if (chosenUnit === 'box') calcPieces = initialQty * totalPcsBox;
+
+    if (calcPieces > line.remainingReturnablePieces) {
+      chosenUnit = 'piece';
+      initialQty = line.remainingReturnablePieces;
+      calcPieces = line.remainingReturnablePieces;
+    }
+
+    return {
+      itemId: line.itemId,
+      tradeName: line.tradeName,
+      genericName: line.genericName,
+      batchId: line.batchId,
+      batchNumber: line.batchNumber,
+      unit: chosenUnit,
+      unitHierarchySnapshot: line.unitHierarchySnapshot,
+      quantity: initialQty,
+      quantityPieces: calcPieces,
+      maxReturnablePieces: line.remainingReturnablePieces,
+      unitPricePerPiece: line.unitPricePerPiece,
+      destinationBucket: 'sellable',
+    };
+  };
+
   const loadInvoiceSummary = async (invId: string) => {
     setLoadingSummary(true);
     setError(null);
     try {
       const summary = await returnApi.getInvoiceReturnSummary(invId);
       setSelectedInvoice(summary.invoice);
-      setLineStatuses(summary.lineStatuses || []);
-      setReturnDrafts({});
+      const lines = summary.lineStatuses || [];
+      setLineStatuses(lines);
+
+      // Pre-populate all purchased items that are returnable
+      const initialDrafts: Record<string, ReturnLineDraft> = {};
+      lines.forEach((line: any) => {
+        if (line.remainingReturnablePieces > 0) {
+          const key = `${line.itemId}_${line.batchId}`;
+          initialDrafts[key] = buildDraftForLine(line);
+        }
+      });
+      setReturnDrafts(initialDrafts);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to load invoice');
     } finally {
       setLoadingSummary(false);
     }
+  };
+
+  const handleSelectAll = () => {
+    const allDrafts: Record<string, ReturnLineDraft> = {};
+    lineStatuses.forEach((line: any) => {
+      if (line.remainingReturnablePieces > 0) {
+        const key = `${line.itemId}_${line.batchId}`;
+        allDrafts[key] = buildDraftForLine(line);
+      }
+    });
+    setReturnDrafts(allDrafts);
+  };
+
+  const handleDeselectAll = () => {
+    setReturnDrafts({});
   };
 
   const handleToggleItemForReturn = (line: any) => {
@@ -126,22 +185,8 @@ export const SalesReturnModal: React.FC<SalesReturnModalProps> = ({
       delete next[key];
       setReturnDrafts(next);
     } else {
-      // Add to drafts with default 1 piece or 1 strip/box
-      const draft: ReturnLineDraft = {
-        itemId: line.itemId,
-        tradeName: line.tradeName,
-        genericName: line.genericName,
-        batchId: line.batchId,
-        batchNumber: line.batchNumber,
-        unit: line.unit,
-        unitHierarchySnapshot: line.unitHierarchySnapshot,
-        quantity: 1,
-        quantityPieces: 1,
-        maxReturnablePieces: line.remainingReturnablePieces,
-        unitPricePerPiece: line.unitPricePerPiece,
-        destinationBucket: 'sellable',
-      };
-      setReturnDrafts({ ...returnDrafts, [key]: draft });
+      // Add to drafts with calculated initial return quantity
+      setReturnDrafts({ ...returnDrafts, [key]: buildDraftForLine(line) });
     }
   };
 
@@ -367,9 +412,28 @@ export const SalesReturnModal: React.FC<SalesReturnModalProps> = ({
         {/* Invoice Lines Table with Selectors */}
         {selectedInvoice && (
           <div className="space-y-3">
-            <span className="text-xs font-bold text-on-surface uppercase tracking-wider block">
-              Select Medicines to Return:
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-on-surface uppercase tracking-wider block">
+                Purchased Medicines ({lineStatuses.length} products):
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                >
+                  Select All
+                </button>
+                <span className="text-on-surface-variant/40">·</span>
+                <button
+                  type="button"
+                  onClick={handleDeselectAll}
+                  className="text-xs font-bold text-on-surface-variant hover:text-on-surface hover:underline cursor-pointer"
+                >
+                  Deselect All
+                </button>
+              </div>
+            </div>
 
             {loadingSummary ? (
               <div className="py-12 text-center text-xs text-on-surface-variant animate-pulse">
