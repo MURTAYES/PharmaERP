@@ -4,11 +4,13 @@ import { StockReceivingModal } from '../components/inventory/StockReceivingModal
 import { StockAdjustmentModal } from '../components/inventory/StockAdjustmentModal';
 import { BatchCostModal } from '../components/inventory/BatchCostModal';
 import { Item, Batch, AlertSummary, ProductDistribution } from '../types';
-import { getItems, toggleItemActive, getProductDistribution } from '../services/itemApi';
+import { getItems, toggleItemActive, getProductDistribution, lookupBarcode } from '../services/itemApi';
 import { getBatchesByItem } from '../services/batchApi';
 import { getAlertSummary, getExpiringBatches, getLowStockItems } from '../services/alertApi';
 import { getSettings } from '../services/settingsApi';
 import { useAuth } from '../context/AuthContext';
+import { UnknownBarcodeModal } from '../components/inventory/UnknownBarcodeModal';
+import { useBarcodeScanner } from '../hooks/useBarcodeScanner';
 
 export const Inventory: React.FC = () => {
   const { user } = useAuth();
@@ -61,6 +63,47 @@ export const Inventory: React.FC = () => {
 
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
   const [selectedBatchForCost, setSelectedBatchForCost] = useState<Batch | null>(null);
+
+  // Scanner & Barcode Pre-fill State
+  const [initialBarcodeForModal, setInitialBarcodeForModal] = useState<string | undefined>(undefined);
+  const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null);
+  const [showUnknownBarcodeModal, setShowUnknownBarcodeModal] = useState(false);
+
+  // Check URL query parameters for ?newBarcode=
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('newBarcode');
+    if (code) {
+      setInitialBarcodeForModal(code);
+      setItemToEdit(null);
+      setIsItemModalOpen(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  // Hardware Scanner detection on Inventory page
+  useBarcodeScanner({
+    onScan: async (code) => {
+      try {
+        const res = await lookupBarcode(code);
+        if (res.matched && res.item) {
+          setProductSearch(code);
+          setExpandedItemId(res.item._id);
+        } else {
+          setUnknownBarcode(code);
+          setShowUnknownBarcodeModal(true);
+        }
+      } catch (err) {
+        console.error('Barcode scanner lookup error', err);
+      }
+    },
+    enabled:
+      !isItemModalOpen &&
+      !isReceivingModalOpen &&
+      !isAdjustmentModalOpen &&
+      !isCostModalOpen &&
+      !showUnknownBarcodeModal,
+  });
 
   // Product Distribution Spider (Real Data from 7-Day Server Cache)
   const [distribution, setDistribution] = useState<ProductDistribution | null>(null);
@@ -1048,13 +1091,16 @@ export const Inventory: React.FC = () => {
       <ItemModal
         isOpen={isItemModalOpen}
         itemToEdit={itemToEdit}
+        initialBarcode={initialBarcodeForModal}
         onClose={() => {
           setIsItemModalOpen(false);
           setItemToEdit(null);
+          setInitialBarcodeForModal(undefined);
         }}
         onSuccess={() => {
           setIsItemModalOpen(false);
           setItemToEdit(null);
+          setInitialBarcodeForModal(undefined);
           loadData();
         }}
       />
@@ -1104,6 +1150,30 @@ export const Inventory: React.FC = () => {
             setSelectedBatchForCost(null);
           }}
           onSuccess={handleCostModalSuccess}
+        />
+      )}
+
+      {/* Unknown Barcode Modal */}
+      {showUnknownBarcodeModal && unknownBarcode && (
+        <UnknownBarcodeModal
+          isOpen={showUnknownBarcodeModal}
+          scannedCode={unknownBarcode}
+          onClose={() => {
+            setShowUnknownBarcodeModal(false);
+            setUnknownBarcode(null);
+          }}
+          onOpenAddProductWithBarcode={(code) => {
+            setInitialBarcodeForModal(code);
+            setItemToEdit(null);
+            setIsItemModalOpen(true);
+            setShowUnknownBarcodeModal(false);
+            setUnknownBarcode(null);
+          }}
+          onLinkedSuccess={(_linkedItem) => {
+            setShowUnknownBarcodeModal(false);
+            setUnknownBarcode(null);
+            loadData();
+          }}
         />
       )}
     </div>

@@ -3,12 +3,14 @@ import Decimal from 'decimal.js';
 import { Item } from '../../types';
 import { createItem, updateItem } from '../../services/itemApi';
 import { getSettings } from '../../services/settingsApi';
+import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
 
 interface ItemModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   itemToEdit?: Item | null;
+  initialBarcode?: string;
 }
 
 export const ItemModal: React.FC<ItemModalProps> = ({
@@ -16,6 +18,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   onClose,
   onSuccess,
   itemToEdit,
+  initialBarcode,
 }) => {
   const [tradeName, setTradeName] = useState('');
   const [genericName, setGenericName] = useState('');
@@ -123,12 +126,25 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       setPiecesPerBox('10');
       setMrpPerPiece('2.50');
       setLowStockThresholdPieces('20');
-      setBarcodes([]);
+      setBarcodes(initialBarcode ? [initialBarcode] : []);
       setQrCode('');
       setNewBarcode('');
     }
     setError(null);
-  }, [itemToEdit, isOpen, categories, brands]);
+  }, [itemToEdit, isOpen, categories, brands, initialBarcode]);
+
+  // Hardware Scanner detection while modal is open
+  useBarcodeScanner({
+    onScan: (code) => {
+      setBarcodes((prev) => {
+        if (!prev.includes(code)) {
+          return [...prev, code];
+        }
+        return prev;
+      });
+    },
+    enabled: isOpen,
+  });
 
   if (!isOpen) return null;
 

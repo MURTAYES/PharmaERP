@@ -4,6 +4,7 @@ import { roleGuard } from '../middleware/roleGuard.js';
 import {
   getItems,
   searchItems,
+  lookupBarcode,
   getItemById,
   createItem,
   updateItem,
@@ -17,6 +18,7 @@ router.use(authenticate);
 
 router.get('/', getItems);
 router.get('/search', searchItems);
+router.get('/lookup-barcode', lookupBarcode);
 router.get('/distribution', getProductDistribution);
 router.get('/:id', getItemById);
 router.post('/', createItem);

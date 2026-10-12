@@ -619,3 +619,84 @@ export async function toggleItemActive(req: AuthenticatedRequest, res: Response)
     res.status(500).json({ error: error.message || 'Failed to toggle item status' });
   }
 }
+
+/**
+ * Fast Barcode & QR Code Product Lookup
+ * Resolves item by item.barcodes, item.qrCode, item.itemCode, or batch.barcode/qrCode.
+ * Returns matching product with active sellable batches sorted by FEFO.
+ */
+export async function lookupBarcode(req: Request, res: Response): Promise<void> {
+  try {
+    const rawCode = ((req.query.code || req.query.barcode || '') as string).trim();
+    if (!rawCode) {
+      res.status(400).json({ error: 'Barcode or QR code query parameter is required' });
+      return;
+    }
+
+    const codeUpper = rawCode.toUpperCase();
+
+    // 1. Check Item by barcodes array, qrCode, or itemCode
+    let item = await Item.findOne({
+      $or: [
+        { barcodes: rawCode },
+        { qrCode: rawCode },
+        { itemCode: codeUpper },
+      ],
+      isActive: true,
+    }).lean();
+
+    let matchingBatchId: string | null = null;
+
+    // 2. If not directly matched on Item, check if code matches a Batch
+    if (!item) {
+      const batch = await Batch.findOne({
+        $or: [
+          { barcode: rawCode },
+          { qrCode: rawCode },
+        ],
+      }).lean();
+
+      if (batch) {
+        matchingBatchId = batch._id.toString();
+        item = await Item.findOne({ _id: batch.itemId, isActive: true }).lean();
+      }
+    } else {
+      // If item was found, check if this barcode also matches a specific batch
+      const specificBatch = await Batch.findOne({
+        itemId: item._id,
+        $or: [{ barcode: rawCode }, { qrCode: rawCode }],
+      }).lean();
+      if (specificBatch) {
+        matchingBatchId = specificBatch._id.toString();
+      }
+    }
+
+    if (!item) {
+      res.json({
+        found: false,
+        code: rawCode,
+      });
+      return;
+    }
+
+    // 3. Fetch active sellable batches for this item sorted by FEFO (earliest expiry first)
+    const now = new Date();
+    const activeBatches = await Batch.find({
+      itemId: item._id,
+      qtySellable: { $gt: 0 },
+      expiryDate: { $gt: now },
+    })
+      .sort({ expiryDate: 1 })
+      .lean();
+
+    res.json({
+      found: true,
+      code: rawCode,
+      item,
+      activeBatches,
+      matchingBatchId,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to lookup barcode' });
+  }
+}

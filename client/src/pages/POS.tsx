@@ -18,6 +18,10 @@ import { POSPaymentModal } from '../components/pos/POSPaymentModal';
 import { POSHoldBillModal } from '../components/pos/POSHoldBillModal';
 import { POSHeldBillsDrawer } from '../components/pos/POSHeldBillsDrawer';
 import { ThermalReceiptModal } from '../components/pos/ThermalReceiptModal';
+import { POSScannerBatchModal } from '../components/pos/POSScannerBatchModal';
+import { UnknownBarcodeModal } from '../components/inventory/UnknownBarcodeModal';
+import { lookupBarcode } from '../services/itemApi';
+import { useBarcodeScanner } from '../hooks/useBarcodeScanner';
 
 export const POS: React.FC = () => {
   const { settings } = useSettings();
@@ -29,6 +33,13 @@ export const POS: React.FC = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [discountPercent, setDiscountPercent] = useState('0.00');
+
+  // Scanner Multi-Batch & Unknown Barcode State
+  const [scannerBatchModalItem, setScannerBatchModalItem] = useState<Item | null>(null);
+  const [scannerBatchModalBatches, setScannerBatchModalBatches] = useState<Batch[]>([]);
+  const [showScannerBatchModal, setShowScannerBatchModal] = useState(false);
+  const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null);
+  const [showUnknownBarcodeModal, setShowUnknownBarcodeModal] = useState(false);
 
   // Held Bills State
   const [heldBills, setHeldBills] = useState<HeldBill[]>([]);
@@ -131,6 +142,107 @@ export const POS: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lines, showPaymentModal, showHoldModal, showHeldDrawer]);
 
+  // Add Batch To Cart Helper
+  const addBatchToCart = (item: Item, chosenBatch: Batch, allBatches: Batch[]) => {
+    const pcsPerStrip = item.unitHierarchy?.piecesPerStrip || 1;
+    const stripsPerBox = item.unitHierarchy?.stripsPerBox || 1;
+    const pcsInBox = item.unitHierarchy?.piecesPerBox || item.totalPiecesPerBox || 10;
+    const mrpPerPiece = item.mrpPerPiece.toString();
+    const safeUnitPrice = formatMoney(mrpPerPiece);
+
+    // Check if already in cart with same batch
+    const existingIdx = lines.findIndex(
+      (l) => l.itemId === item._id && l.batchId === chosenBatch._id
+    );
+
+    if (existingIdx >= 0) {
+      const updated = [...lines];
+      const currentLine = updated[existingIdx];
+      const newQty = currentLine.quantity + 1;
+      const lineTotal = safeDecimal(currentLine.unitPrice).times(newQty).toFixed(2);
+
+      updated[existingIdx] = {
+        ...currentLine,
+        quantity: newQty,
+        quantityPieces: currentLine.unit === 'box' ? newQty * (currentLine.unitHierarchy.piecesPerBox || 10) : newQty,
+        lineTotal,
+      };
+      setLines(updated);
+    } else {
+      const isFefo = allBatches.length > 0 && allBatches[0]._id === chosenBatch._id;
+      const newLine: CartLineItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        itemId: item._id,
+        tradeName: item.tradeName,
+        genericName: item.genericName,
+        unitHierarchy: {
+          piecesPerBox: pcsInBox,
+          piecesPerStrip: pcsPerStrip,
+          stripsPerBox: stripsPerBox,
+        },
+        mrpPerPiece: safeUnitPrice,
+        batchId: chosenBatch._id,
+        batchNumber: chosenBatch.batchNumber,
+        expiryDate: chosenBatch.expiryDate,
+        availableStockPieces: chosenBatch.qtySellable,
+        isFefo: isFefo,
+        isNonFefo: !isFefo,
+        availableBatches: allBatches,
+        unit: 'piece',
+        quantity: 1,
+        quantityPieces: 1,
+        catalogUnitPrice: safeUnitPrice,
+        unitPrice: safeUnitPrice,
+        isPriceOverridden: false,
+        lineTotal: safeUnitPrice,
+      };
+      setLines((prev) => [newLine, ...prev]);
+    }
+  };
+
+  // Barcode Scanner Handler
+  const handleBarcodeScan = async (code: string) => {
+    setError(null);
+    try {
+      const res = await lookupBarcode(code);
+      if (!res.matched || !res.item) {
+        setUnknownBarcode(code);
+        setShowUnknownBarcodeModal(true);
+        return;
+      }
+
+      const item = res.item;
+      const batches = res.batches || [];
+
+      if (batches.length === 0) {
+        setError(`"${item.tradeName}" is out of stock (no sellable batches found)`);
+        return;
+      }
+
+      if (batches.length === 1) {
+        addBatchToCart(item, batches[0], batches);
+      } else {
+        setScannerBatchModalItem(item);
+        setScannerBatchModalBatches(batches);
+        setShowScannerBatchModal(true);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Error processing scanned barcode');
+    }
+  };
+
+  // Global Barcode Scanner Listener for POS
+  useBarcodeScanner({
+    onScan: handleBarcodeScan,
+    enabled:
+      !showPaymentModal &&
+      !showHoldModal &&
+      !showHeldDrawer &&
+      !showReceiptModal &&
+      !showScannerBatchModal &&
+      !showUnknownBarcodeModal,
+  });
+
   // Handle Adding Item from Search
   const handleSelectItem = async (item: Item) => {
     setError(null);
@@ -144,60 +256,7 @@ export const POS: React.FC = () => {
       }
 
       // Default to the first (FEFO) batch
-      const fefoBatch = batches[0];
-      const pcsPerStrip = item.unitHierarchy?.piecesPerStrip || 1;
-      const stripsPerBox = item.unitHierarchy?.stripsPerBox || 1;
-      const mrpPerPiece = item.mrpPerPiece.toString();
-
-      // Check if already in cart with same batch
-      const existingIdx = lines.findIndex(
-        (l) => l.itemId === item._id && l.batchId === fefoBatch._id
-      );
-
-      if (existingIdx >= 0) {
-        const updated = [...lines];
-        const currentLine = updated[existingIdx];
-        const newQty = currentLine.quantity + 1;
-        const lineTotal = safeDecimal(currentLine.unitPrice).times(newQty).toFixed(2);
-
-        updated[existingIdx] = {
-          ...currentLine,
-          quantity: newQty,
-          quantityPieces: newQty,
-          lineTotal,
-        };
-        setLines(updated);
-      } else {
-        const pcsInBox = item.unitHierarchy?.piecesPerBox || item.totalPiecesPerBox || 10;
-        const safeUnitPrice = formatMoney(mrpPerPiece);
-        const newLine: CartLineItem = {
-          id: Math.random().toString(36).substring(2, 9),
-          itemId: item._id,
-          tradeName: item.tradeName,
-          genericName: item.genericName,
-          unitHierarchy: {
-            piecesPerBox: pcsInBox,
-            piecesPerStrip: pcsPerStrip,
-            stripsPerBox: stripsPerBox,
-          },
-          mrpPerPiece: safeUnitPrice,
-          batchId: fefoBatch._id,
-          batchNumber: fefoBatch.batchNumber,
-          expiryDate: fefoBatch.expiryDate,
-          availableStockPieces: fefoBatch.qtySellable,
-          isFefo: true,
-          isNonFefo: false,
-          availableBatches: batches,
-          unit: 'piece',
-          quantity: 1,
-          quantityPieces: 1,
-          catalogUnitPrice: safeUnitPrice,
-          unitPrice: safeUnitPrice,
-          isPriceOverridden: false,
-          lineTotal: safeUnitPrice,
-        };
-        setLines((prev) => [newLine, ...prev]);
-      }
+      addBatchToCart(item, batches[0], batches);
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Failed to add medicine');
     }
@@ -820,6 +879,46 @@ export const POS: React.FC = () => {
           }}
           invoice={completedInvoice}
           autoPrint={autoPrintReceipt}
+        />
+      )}
+
+      {/* Scanner Multi-Batch Picker Modal */}
+      {showScannerBatchModal && scannerBatchModalItem && (
+        <POSScannerBatchModal
+          isOpen={showScannerBatchModal}
+          item={scannerBatchModalItem}
+          activeBatches={scannerBatchModalBatches}
+          onSelectBatch={(item, batch) => {
+            addBatchToCart(item, batch, scannerBatchModalBatches);
+            setShowScannerBatchModal(false);
+            setScannerBatchModalItem(null);
+          }}
+          onClose={() => {
+            setShowScannerBatchModal(false);
+            setScannerBatchModalItem(null);
+          }}
+        />
+      )}
+
+      {/* Unknown Barcode Modal */}
+      {showUnknownBarcodeModal && unknownBarcode && (
+        <UnknownBarcodeModal
+          isOpen={showUnknownBarcodeModal}
+          scannedCode={unknownBarcode}
+          onClose={() => {
+            setShowUnknownBarcodeModal(false);
+            setUnknownBarcode(null);
+          }}
+          onOpenAddProductWithBarcode={(code) => {
+            setShowUnknownBarcodeModal(false);
+            setUnknownBarcode(null);
+            window.location.href = `/inventory?newBarcode=${encodeURIComponent(code)}`;
+          }}
+          onLinkedSuccess={(linkedItem) => {
+            setShowUnknownBarcodeModal(false);
+            setUnknownBarcode(null);
+            handleSelectItem(linkedItem);
+          }}
         />
       )}
     </div>

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Decimal from 'decimal.js';
 import { Item } from '../../types';
-import { searchItems } from '../../services/itemApi';
+import { searchItems, lookupBarcode } from '../../services/itemApi';
 import { receiveBatch } from '../../services/batchApi';
 import { getSettings } from '../../services/settingsApi';
 import { useAuth } from '../../context/AuthContext';
+import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
 
 interface StockReceivingModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
 }) => {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
+
+  const batchNumberRef = useRef<HTMLInputElement | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Item[]>([]);
@@ -163,6 +166,38 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
       }
     }
   }, [selectedItem, brands]);
+
+  // Scanner integration for Stock Receiving
+  useBarcodeScanner({
+    onScan: async (code) => {
+      try {
+        const res = await lookupBarcode(code);
+        if (res.matched && res.item) {
+          setSelectedItem(res.item);
+          setSearchQuery(`${res.item.tradeName} (${res.item.genericName})`);
+          setSearchResults([]);
+          const itemBrand = res.item.brandName || res.item.manufacturer || '';
+          if (itemBrand) {
+            setBrandName(itemBrand);
+          }
+          if (!barcode) {
+            setBarcode(code);
+          }
+          setError(null);
+          // Jump focus to Batch Number input
+          setTimeout(() => {
+            batchNumberRef.current?.focus();
+            batchNumberRef.current?.select();
+          }, 60);
+        } else {
+          setError(`Barcode "${code}" not found in master catalog. Please select or add the product first.`);
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.error || err.message || 'Error looking up scanned barcode');
+      }
+    },
+    enabled: isOpen,
+  });
 
   if (!isOpen) return null;
 
@@ -395,6 +430,7 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
                 Batch Number <span className="text-rose-500">*</span>
               </label>
               <input
+                ref={batchNumberRef}
                 id="batchNumber"
                 type="text"
                 placeholder="e.g. B2049, SEC-88"

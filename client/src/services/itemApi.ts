@@ -83,3 +83,26 @@ export async function getProductDistribution(refresh = false): Promise<import('.
   return res.data;
 }
 
+import { Batch } from '../types';
+
+export interface BarcodeLookupResponse {
+  found: boolean;
+  matched: boolean;
+  code: string;
+  item?: Item;
+  activeBatches?: Batch[];
+  batches?: Batch[];
+  matchingBatchId?: string | null;
+}
+
+export async function lookupBarcode(code: string): Promise<BarcodeLookupResponse> {
+  const res = await api.get<any>('/items/lookup-barcode', {
+    params: { code },
+  });
+  return {
+    ...res.data,
+    matched: Boolean(res.data?.found),
+    batches: res.data?.activeBatches || [],
+  };
+}
+

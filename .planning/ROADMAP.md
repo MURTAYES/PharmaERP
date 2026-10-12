@@ -25,7 +25,7 @@
 
 - [ ] **Phase 7: Backend Pharmacist Operations & Shift KPI Aggregation APIs** — Dedicated endpoint for real-time shift dispensing metrics, dosage form breakdown, and counter statistics.
 - [ ] **Phase 8: Frontend Pharmacist Dashboard Live Integration & Real-Time Counter Widgets** — Connect live aggregation pipelines to Pharmacist Dashboard, FEFO batch card, held bills quick-resume drawer, and instant thermal receipt modal.
-- [ ] **Phase 9: Automated Barcode & QR Scanner Integration (POS & Inventory Auto-Detection)** — Global hardware scanner detection (HID keyboard wedge), auto-adding items to POS cart upon scan, and auto-populating product and batch details in Inventory Stock Receiving.
+- [x] **Phase 9: Automated Barcode & QR Scanner Integration (POS & Inventory Auto-Detection)** (2/2 plans) — completed 2026-10-12
 
 ---
 
