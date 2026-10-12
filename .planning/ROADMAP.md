@@ -25,6 +25,7 @@
 
 - [ ] **Phase 7: Backend Pharmacist Operations & Shift KPI Aggregation APIs** — Dedicated endpoint for real-time shift dispensing metrics, dosage form breakdown, and counter statistics.
 - [ ] **Phase 8: Frontend Pharmacist Dashboard Live Integration & Real-Time Counter Widgets** — Connect live aggregation pipelines to Pharmacist Dashboard, FEFO batch card, held bills quick-resume drawer, and instant thermal receipt modal.
+- [ ] **Phase 9: Automated Barcode & QR Scanner Integration (POS & Inventory Auto-Detection)** — Global hardware scanner detection (HID keyboard wedge), auto-adding items to POS cart upon scan, and auto-populating product and batch details in Inventory Stock Receiving.
 
 ---
 
@@ -50,3 +51,14 @@
 2. Urgent FEFO watchlist displays real batches with exact expiration countdowns and shelf coordinates.
 3. Held bills drawer allows immediate one-click resumption into the POS billing terminal.
 4. All dummy/placeholder stats and rows are replaced with live MongoDB queries.
+
+### Phase 9: Automated Barcode & QR Scanner Integration (POS & Inventory Auto-Detection)
+**Goal**: Integrate hardware barcode and QR code scanners (USB/Bluetooth HID keyboard-wedge emulation) with automatic listener detection. In POS billing, scanning immediately locates the medicine/batch and auto-adds it to the cart (or increments quantity). In Inventory Receiving, scanning an incoming product auto-fills the product name, brand, category, and existing details into the modal.
+**Mode:** mvp  
+**Depends on**: Phase 3, Phase 2  
+**Requirements**: [SCAN-01, SCAN-02, SCAN-03]  
+**Success Criteria**:
+1. Global hardware scanner listener distinguishes rapid scanner keystrokes (<30ms inter-character interval ending in Enter) from manual user typing.
+2. POS Terminal: Scanning a barcode/QR immediately adds the FEFO batch to the billing cart without requiring user to focus the search box. Repeated scans increment quantity by 1.
+3. Inventory Receiving: Scanning a barcode inside the Receive Batch modal automatically detects the product, auto-fills name, brand, packaging, and selects the matching item.
+4. Unknown Barcodes: If a barcode isn't recognized, shows a clean prompt to attach it to an existing product or register a new one.
