@@ -644,14 +644,51 @@ export function Dashboard() {
 
       {/* Mid Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Top Company / Manufacturer Sales (Donut & Breakdown, 1 column) */}
+        {/* Top Company / Manufacturer Sales (Pie Chart, 1 column) */}
         {(() => {
-          const colors = ['#002F34', '#00A887', '#97D8D0', '#F1B5B9', '#D7F1B5', '#B5BFF1'];
-          const topCompany = companySales[0];
+          const colors = ['#002F34', '#00A887', '#0EA5E9', '#F43F5E', '#F59E0B', '#8B5CF6', '#10B981'];
+          const totalRaw = companySales.reduce((sum: number, c: any) => sum + (c.rawRevenue || 0), 0);
 
-          // Calculate SVG Donut stroke offsets
-          let cumulativeOffset = 0;
-          const circumference = 2 * Math.PI * 46; // ~289.02
+          const cx = 80;
+          const cy = 80;
+          const radius = 66;
+
+          let currentAngle = -Math.PI / 2; // start at top 12 o'clock
+
+          const slices = companySales.map((c: any, idx: number) => {
+            const fraction = totalRaw > 0 ? (c.rawRevenue || 0) / totalRaw : (c.percentage ? c.percentage / 100 : 0);
+            const angle = fraction * 2 * Math.PI;
+            const startAngle = currentAngle;
+            const endAngle = currentAngle + angle;
+            currentAngle = endAngle;
+
+            const isFullCircle = fraction >= 0.999;
+            const x1 = cx + radius * Math.cos(startAngle);
+            const y1 = cy + radius * Math.sin(startAngle);
+            const x2 = cx + radius * Math.cos(endAngle);
+            const y2 = cy + radius * Math.sin(endAngle);
+            const largeArc = angle > Math.PI ? 1 : 0;
+            const pathData = isFullCircle
+              ? ''
+              : `M ${cx},${cy} L ${x1},${y1} A ${radius},${radius} 0 ${largeArc},1 ${x2},${y2} Z`;
+
+            // Coordinates for slice percentage label
+            const midAngle = startAngle + angle / 2;
+            const labelR = radius * 0.65;
+            const lx = cx + labelR * Math.cos(midAngle);
+            const ly = cy + labelR * Math.sin(midAngle);
+            const pct = Math.round(fraction * 100);
+
+            return {
+              ...c,
+              pathData,
+              isFullCircle,
+              color: colors[idx % colors.length],
+              pct,
+              lx,
+              ly,
+            };
+          });
 
           return (
             <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
@@ -665,64 +702,67 @@ export function Dashboard() {
                 </span>
               </div>
 
-              {companySales.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-400">
+              {companySales.length === 0 || totalRaw === 0 ? (
+                <div className="py-14 text-center text-xs text-slate-400">
                   No manufacturer sales recorded for this period yet.
                 </div>
               ) : (
                 <>
-                  {/* Donut Chart Graphic */}
+                  {/* True Pie Chart Graphic */}
                   <div className="relative flex items-center justify-center my-2">
-                    <svg className="w-44 h-44 -rotate-90" viewBox="0 0 120 120">
-                      {/* Background Track */}
-                      <circle cx="60" cy="60" fill="transparent" r="46" stroke="#f1f5f9" strokeWidth="12" />
-
-                      {/* Segments */}
-                      {companySales.map((c: any, idx: number) => {
-                        const pct = Math.max(0, Math.min(100, c.percentage || 0));
-                        const dashLength = (pct / 100) * circumference;
-                        const dashArray = `${dashLength} ${circumference}`;
-                        const currentOffset = -cumulativeOffset;
-                        cumulativeOffset += dashLength;
-
+                    <svg className="w-44 h-44 drop-shadow-sm overflow-visible" viewBox="0 0 160 160">
+                      {slices.map((slice: any) => {
+                        if (slice.isFullCircle) {
+                          return (
+                            <circle
+                              key={slice.company}
+                              cx={cx}
+                              cy={cy}
+                              r={radius}
+                              fill={slice.color}
+                              stroke="#ffffff"
+                              strokeWidth="2"
+                            />
+                          );
+                        }
                         return (
-                          <circle
-                            key={c.company}
-                            cx="60"
-                            cy="60"
-                            fill="transparent"
-                            r="46"
-                            stroke={colors[idx % colors.length]}
-                            strokeDasharray={dashArray}
-                            strokeDashoffset={currentOffset}
-                            strokeLinecap="round"
-                            strokeWidth="12"
-                            className="transition-all duration-500"
-                          />
+                          <g key={slice.company} className="transition-transform duration-200 hover:scale-[1.03] origin-center cursor-pointer group">
+                            <path
+                              d={slice.pathData}
+                              fill={slice.color}
+                              stroke="#ffffff"
+                              strokeWidth="2"
+                              strokeLinejoin="round"
+                            />
+                            {/* In-slice percentage label for prominent slices */}
+                            {slice.pct >= 8 && (
+                              <text
+                                x={slice.lx}
+                                y={slice.ly}
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                                fill="#ffffff"
+                                fontSize="9"
+                                fontWeight="bold"
+                                className="pointer-events-none select-none drop-shadow"
+                              >
+                                {slice.pct}%
+                              </text>
+                            )}
+                          </g>
                         );
                       })}
                     </svg>
-
-                    {/* Donut Inner Text */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Top Brand</span>
-                      <span className="text-sm font-black text-[#002F34] line-clamp-1 max-w-[110px]" title={topCompany?.company}>
-                        {topCompany?.company || 'None'}
-                      </span>
-                      <span className="text-[10px] font-mono font-bold text-emerald-600">
-                        {topCompany?.percentage || 0}% share
-                      </span>
-                    </div>
                   </div>
 
                   {/* Company Legend & Sales List */}
                   <div className="space-y-1.5 pt-3 border-t border-slate-100 max-h-40 overflow-y-auto">
-                    {companySales.map((c: any, idx: number) => (
-                      <div key={c.company} className="flex items-center justify-between text-[11px]">
+                    {slices.map((c: any) => (
+                      <div key={c.company} className="flex items-center justify-between text-[11px] hover:bg-slate-50/80 px-1 py-0.5 rounded transition-colors">
                         <div className="flex items-center space-x-1.5 truncate max-w-[150px]">
                           <span
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: colors[idx % colors.length] }}
+                            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                            style={{ backgroundColor: c.color }}
                           />
                           <span className="font-semibold text-slate-700 truncate" title={c.company}>
                             {c.company}
@@ -731,7 +771,7 @@ export function Dashboard() {
                         <div className="flex items-center space-x-2 shrink-0">
                           <span className="text-[10px] text-slate-400 font-medium">{c.pieces} pcs</span>
                           <span className="font-bold text-[#002F34]">৳ {parseFloat(c.revenue).toFixed(0)}</span>
-                          <span className="font-bold text-slate-400 w-7 text-right">({c.percentage}%)</span>
+                          <span className="font-bold text-slate-500 w-8 text-right font-mono">({c.pct}%)</span>
                         </div>
                       </div>
                     ))}
