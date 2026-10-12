@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Decimal from 'decimal.js';
 import { CheckoutPayload } from '../../services/posApi';
+import { safeDecimal, formatMoney } from '../../utils/money';
 
 interface POSPaymentModalProps {
   isOpen: boolean;
@@ -39,27 +39,27 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
   const [splitMfs, setSplitMfs] = useState('');
   const [splitCard, setSplitCard] = useState('');
 
+  const safeGrandTotalStr = formatMoney(grandTotal);
+
   useEffect(() => {
-    setCashTendered(grandTotal);
+    setCashTendered(safeGrandTotalStr);
     setMfsTransactionId('');
     setCardLast4('');
     setSplitCash('');
     setSplitMfs('');
     setSplitCard('');
-  }, [grandTotal, isOpen]);
-
-  if (!isOpen) return null;
+  }, [safeGrandTotalStr, isOpen]);
 
   // Cash change due calculation
-  const grandTotalDec = new Decimal(grandTotal || 0);
-  const cashTenderedDec = new Decimal(cashTendered || 0);
+  const grandTotalDec = safeDecimal(grandTotal);
+  const cashTenderedDec = safeDecimal(cashTendered);
   const isSufficient = cashTenderedDec.greaterThanOrEqualTo(grandTotalDec);
   const changeDue = isSufficient ? cashTenderedDec.minus(grandTotalDec).toFixed(2) : '0.00';
   const balanceRemaining = !isSufficient ? grandTotalDec.minus(cashTenderedDec).toFixed(2) : '0.00';
 
   const handleQuickCash = (amount: number | 'exact') => {
     if (amount === 'exact') {
-      setCashTendered(grandTotal);
+      setCashTendered(safeGrandTotalStr);
     } else {
       setCashTendered(amount.toFixed(2));
     }
@@ -92,13 +92,13 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
       };
     } else {
       // Split payment
-      const totalSplit = new Decimal(splitCash || 0)
-        .plus(new Decimal(splitMfs || 0))
-        .plus(new Decimal(splitCard || 0));
+      const totalSplit = safeDecimal(splitCash)
+        .plus(safeDecimal(splitMfs))
+        .plus(safeDecimal(splitCard));
 
       if (!totalSplit.equals(grandTotalDec)) {
         alert(
-          `Split amounts (৳ ${totalSplit.toFixed(2)}) must exactly equal Grand Total (৳ ${grandTotal})`
+          `Split amounts (৳ ${totalSplit.toFixed(2)}) must exactly equal Grand Total (৳ ${safeGrandTotalStr})`
         );
         return;
       }
@@ -106,15 +106,44 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
       paymentData = {
         method: 'split',
         splitDetails: {
-          cashAmount: splitCash ? parseFloat(splitCash).toFixed(2) : undefined,
-          mfsAmount: splitMfs ? parseFloat(splitMfs).toFixed(2) : undefined,
-          cardAmount: splitCard ? parseFloat(splitCard).toFixed(2) : undefined,
+          cashAmount: splitCash ? safeDecimal(splitCash).toFixed(2) : undefined,
+          mfsAmount: splitMfs ? safeDecimal(splitMfs).toFixed(2) : undefined,
+          cardAmount: splitCard ? safeDecimal(splitCard).toFixed(2) : undefined,
         },
       };
     }
 
     onConfirmCheckout(paymentData, autoPrint);
   };
+
+  // Keyboard navigation for fast POS checkout
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        // Prevent default submit behavior
+        e.preventDefault();
+        if (loading) return;
+        if (e.ctrlKey || e.metaKey) {
+          handleSubmit(false); // Complete Sale
+        } else {
+          handleSubmit(true); // Complete & Print (standard quick transaction)
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, method, cashTendered, isSufficient, splitCash, splitMfs, splitCard, loading]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#002F34]/40 backdrop-blur-[6px] transition-all">
@@ -151,7 +180,7 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
               <div className="flex items-baseline gap-1 mt-0.5">
                 <span className="text-lg font-bold text-[#007062]">৳</span>
                 <span className="text-3xl font-black font-mono text-[#002F34] tracking-tight">
-                  {parseFloat(grandTotal).toFixed(2)}
+                  {safeGrandTotalStr}
                 </span>
               </div>
             </div>
@@ -220,7 +249,7 @@ export const POSPaymentModal: React.FC<POSPaymentModalProps> = ({
                   onClick={() => handleQuickCash('exact')}
                   className="px-3 py-1.5 text-xs font-bold bg-white border border-[#97D8D0] text-[#006059] rounded-xl hover:bg-[#E7F6F3] transition-colors cursor-pointer shadow-2xs"
                 >
-                  Exact (৳{parseFloat(grandTotal).toFixed(0)})
+                  Exact (৳{formatMoney(grandTotal, 0)})
                 </button>
                 {[50, 100, 200, 500, 1000, 2000].map((amt) => (
                   <button

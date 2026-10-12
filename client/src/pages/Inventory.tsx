@@ -20,6 +20,7 @@ export const Inventory: React.FC = () => {
   const [genericSearch, setGenericSearch] = useState('');
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
+  const [productCategoryFilter, setProductCategoryFilter] = useState<'All' | 'Medicine' | 'Baby food' | 'Non food' | 'Consumer'>('All');
   const [activeAlertFilter, setActiveAlertFilter] = useState<
     'all' | 'expired' | 'critical' | 'warning' | 'notice' | 'low_stock'
   >('all');
@@ -129,6 +130,7 @@ export const Inventory: React.FC = () => {
           productName: productSearch.trim() || undefined,
           genericName: genericSearch.trim() || undefined,
           category: category || undefined,
+          productCategory: productCategoryFilter !== 'All' ? productCategoryFilter : undefined,
           sortBy,
           sortOrder,
         });
@@ -141,7 +143,7 @@ export const Inventory: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, productSearch, genericSearch, category, activeAlertFilter, sortBy, sortOrder]);
+  }, [page, limit, productSearch, genericSearch, category, productCategoryFilter, activeAlertFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     loadData();
@@ -604,6 +606,22 @@ export const Inventory: React.FC = () => {
               )}
             </div>
 
+            {/* Product Category Filter (Medicine, Baby food, Non food, Consumer) */}
+            <select
+              value={productCategoryFilter}
+              onChange={(e) => {
+                setProductCategoryFilter(e.target.value as any);
+                setPage(1);
+              }}
+              className="bg-[#E7F6F3] border border-[#BDE8E0] text-xs rounded-full py-1.5 px-3 focus:ring-1 focus:ring-[#002F34] text-[#006059] font-bold cursor-pointer"
+            >
+              <option value="All">All Types</option>
+              <option value="Medicine">Medicine</option>
+              <option value="Baby food">Baby food</option>
+              <option value="Non food">Non food</option>
+              <option value="Consumer">Consumer</option>
+            </select>
+
             {/* Category Filter */}
             <select
               value={category}
@@ -758,7 +776,14 @@ export const Inventory: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-3.5 px-3">
-                          <div className="font-medium text-[#0D2F2B]">{item.genericName}</div>
+                          <div className="font-medium text-[#0D2F2B] flex items-center gap-2">
+                            <span>{item.genericName}</span>
+                            {item.productCategory && item.productCategory !== 'Medicine' && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-purple-50 text-purple-700 border border-purple-200">
+                                {item.productCategory}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[10px] text-[#7E9390]">
                             {item.category || 'General'} • {item.brandName || item.manufacturer}
                           </div>

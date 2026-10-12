@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Decimal from 'decimal.js';
 import { Item, Batch, Invoice, HeldBill } from '../types';
 import { useSettings } from '../context/SettingsContext.tsx';
+import { safeDecimal, formatMoney, parseMoney } from '../utils/money';
 import {
   getBatchesForItem,
   checkout,
@@ -156,7 +157,7 @@ export const POS: React.FC = () => {
         const updated = [...lines];
         const currentLine = updated[existingIdx];
         const newQty = currentLine.quantity + 1;
-        const lineTotal = new Decimal(currentLine.unitPrice).times(newQty).toFixed(2);
+        const lineTotal = safeDecimal(currentLine.unitPrice).times(newQty).toFixed(2);
 
         updated[existingIdx] = {
           ...currentLine,
@@ -167,6 +168,7 @@ export const POS: React.FC = () => {
         setLines(updated);
       } else {
         const pcsInBox = item.unitHierarchy?.piecesPerBox || item.totalPiecesPerBox || 10;
+        const safeUnitPrice = formatMoney(mrpPerPiece);
         const newLine: CartLineItem = {
           id: Math.random().toString(36).substring(2, 9),
           itemId: item._id,
@@ -177,7 +179,7 @@ export const POS: React.FC = () => {
             piecesPerStrip: pcsPerStrip,
             stripsPerBox: stripsPerBox,
           },
-          mrpPerPiece,
+          mrpPerPiece: safeUnitPrice,
           batchId: fefoBatch._id,
           batchNumber: fefoBatch.batchNumber,
           expiryDate: fefoBatch.expiryDate,
@@ -188,10 +190,10 @@ export const POS: React.FC = () => {
           unit: 'piece',
           quantity: 1,
           quantityPieces: 1,
-          catalogUnitPrice: mrpPerPiece,
-          unitPrice: mrpPerPiece,
+          catalogUnitPrice: safeUnitPrice,
+          unitPrice: safeUnitPrice,
           isPriceOverridden: false,
-          lineTotal: mrpPerPiece,
+          lineTotal: safeUnitPrice,
         };
         setLines((prev) => [newLine, ...prev]);
       }
@@ -205,11 +207,12 @@ export const POS: React.FC = () => {
     setLines((prev) =>
       prev.map((l) => {
         if (l.id !== id) return l;
-        const lineTotal = new Decimal(l.unitPrice).times(qty).toFixed(2);
+        const safeQty = Math.max(1, isNaN(qty) ? 1 : qty);
+        const lineTotal = safeDecimal(l.unitPrice).times(safeQty).toFixed(2);
         return {
           ...l,
-          quantity: qty,
-          quantityPieces: qty,
+          quantity: safeQty,
+          quantityPieces: safeQty,
           lineTotal,
         };
       })
@@ -221,7 +224,7 @@ export const POS: React.FC = () => {
       prev.map((l) => {
         if (l.id !== id) return l;
         const pcsInBox = l.unitHierarchy.piecesPerBox || 10;
-        const mrpDec = new Decimal(l.mrpPerPiece);
+        const mrpDec = safeDecimal(l.mrpPerPiece);
 
         let newCatalogPrice = mrpDec.toFixed(2);
         if (unit === 'box') newCatalogPrice = mrpDec.times(pcsInBox).toFixed(2);
@@ -230,7 +233,7 @@ export const POS: React.FC = () => {
         if (unit === 'box') qtyPieces = l.quantity * pcsInBox;
 
         const newUnitPrice = l.isPriceOverridden ? l.unitPrice : newCatalogPrice;
-        const lineTotal = new Decimal(newUnitPrice).times(l.quantity).toFixed(2);
+        const lineTotal = safeDecimal(newUnitPrice).times(l.quantity).toFixed(2);
 
         return {
           ...l,
@@ -265,11 +268,11 @@ export const POS: React.FC = () => {
     setLines((prev) =>
       prev.map((l) => {
         if (l.id !== id) return l;
-        const isOverridden = parseFloat(newPrice) !== parseFloat(l.catalogUnitPrice);
-        const lineTotal = new Decimal(newPrice).times(l.quantity).toFixed(2);
+        const isOverridden = parseMoney(newPrice) !== parseMoney(l.catalogUnitPrice);
+        const lineTotal = safeDecimal(newPrice).times(l.quantity).toFixed(2);
         return {
           ...l,
-          unitPrice: newPrice,
+          unitPrice: formatMoney(newPrice),
           isPriceOverridden: isOverridden,
           lineTotal,
         };
@@ -296,11 +299,11 @@ export const POS: React.FC = () => {
     let totalPcs = 0;
 
     for (const line of lines) {
-      subtotalDec = subtotalDec.plus(new Decimal(line.lineTotal || 0));
-      totalPcs += line.quantityPieces;
+      subtotalDec = subtotalDec.plus(safeDecimal(line.lineTotal));
+      totalPcs += Number(line.quantityPieces) || 0;
     }
 
-    const discountDec = new Decimal(discountPercent || 0);
+    const discountDec = safeDecimal(discountPercent);
     const discountAmountDec = subtotalDec.times(discountDec.dividedBy(100));
     const netAfterDiscountDec = subtotalDec.minus(discountAmountDec);
 
@@ -311,10 +314,11 @@ export const POS: React.FC = () => {
       for (const ch of settings.charges) {
         if (!ch.isActive) continue;
         let amt = new Decimal(0);
+        const rateDec = safeDecimal(ch.rate);
         if (ch.type === 'percentage') {
-          amt = netAfterDiscountDec.times(new Decimal(ch.rate).dividedBy(100));
+          amt = netAfterDiscountDec.times(rateDec.dividedBy(100));
         } else {
-          amt = new Decimal(ch.rate);
+          amt = rateDec;
         }
         totalChargesDec = totalChargesDec.plus(amt);
         chargeBreakdown.push({ name: ch.name, amount: amt.toFixed(2) });
@@ -325,13 +329,19 @@ export const POS: React.FC = () => {
       .plus(totalChargesDec)
       .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 
+    const safeSubtotal = isNaN(subtotalDec.toNumber()) ? '0.00' : subtotalDec.toFixed(2);
+    const safeDiscount = isNaN(discountAmountDec.toNumber()) ? '0.00' : discountAmountDec.toFixed(2);
+    const safeNet = isNaN(netAfterDiscountDec.toNumber()) ? '0.00' : netAfterDiscountDec.toFixed(2);
+    const safeTotalCharges = isNaN(totalChargesDec.toNumber()) ? '0.00' : totalChargesDec.toFixed(2);
+    const safeGrandTotal = isNaN(grandTotalDec.toNumber()) ? '0.00' : grandTotalDec.toFixed(2);
+
     return {
-      subtotal: subtotalDec.toFixed(2),
-      discountAmount: discountAmountDec.toFixed(2),
-      netAfterDiscount: netAfterDiscountDec.toFixed(2),
+      subtotal: safeSubtotal,
+      discountAmount: safeDiscount,
+      netAfterDiscount: safeNet,
       charges: chargeBreakdown,
-      totalCharges: totalChargesDec.toFixed(2),
-      grandTotal: grandTotalDec.toFixed(2),
+      totalCharges: safeTotalCharges,
+      grandTotal: safeGrandTotal,
       totalPieces: totalPcs,
     };
   }, [lines, discountPercent, settings?.charges]);
@@ -594,6 +604,11 @@ export const POS: React.FC = () => {
           {/* Dual Medicine Search Bars */}
           <POSItemSearch
             onSelectItem={handleSelectItem}
+            onQuickCheckout={() => {
+              if (lines.length > 0 && !showPaymentModal && !showHoldModal && !showHeldDrawer) {
+                setShowPaymentModal(true);
+              }
+            }}
             productInputRef={productSearchInputRef}
             genericInputRef={genericSearchInputRef}
           />

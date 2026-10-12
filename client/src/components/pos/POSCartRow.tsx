@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Batch } from '../../types';
 import { POSBatchSelectorModal } from './POSBatchSelectorModal';
 import { POSPriceOverrideModal } from './POSPriceOverrideModal';
+import { formatMoney } from '../../utils/money';
 
 export interface CartLineItem {
   id: string; // client uuid
@@ -153,11 +154,11 @@ export const POSCartRow: React.FC<POSCartRowProps> = ({
           <div className="flex items-center gap-2">
             <div>
               <span className="font-mono font-bold text-xs sm:text-sm text-[#002F34]">
-                ৳ {parseFloat(line.unitPrice).toFixed(2)}
+                ৳ {formatMoney(line.unitPrice)}
               </span>
               {line.isPriceOverridden && (
                 <span className="block text-[9px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-full mt-0.5">
-                  Overridden (Cat: ৳{line.catalogUnitPrice})
+                  Overridden (Cat: ৳{formatMoney(line.catalogUnitPrice)})
                 </span>
               )}
             </div>
@@ -177,7 +178,7 @@ export const POSCartRow: React.FC<POSCartRowProps> = ({
         {/* Line Total */}
         <td className="py-3 px-3 text-right">
           <span className="font-mono font-extrabold text-sm text-[#002F34]">
-            ৳ {parseFloat(line.lineTotal).toFixed(2)}
+            ৳ {formatMoney(line.lineTotal)}
           </span>
         </td>
 

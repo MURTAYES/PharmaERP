@@ -111,10 +111,13 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
     setSuccessMsg(null);
   }, [preselectedItem, isOpen]);
 
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
   // Handle search query with debounce
   useEffect(() => {
     if (!searchQuery.trim() || selectedItem) {
       setSearchResults([]);
+      setSelectedIndex(0);
       return;
     }
 
@@ -123,6 +126,7 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
       try {
         const res = await searchItems(searchQuery, 8);
         setSearchResults(res.items);
+        setSelectedIndex(0);
       } catch {
         setSearchResults([]);
       } finally {
@@ -132,6 +136,28 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
 
     return () => clearTimeout(timer);
   }, [searchQuery, selectedItem]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (searchResults.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1 < searchResults.length ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev - 1 >= 0 ? prev - 1 : searchResults.length - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const chosen = searchResults[selectedIndex];
+      if (chosen) {
+        setSelectedItem(chosen);
+        setSearchQuery(`${chosen.tradeName} (${chosen.genericName})`);
+        setSearchResults([]);
+      }
+    } else if (e.key === 'Escape') {
+      setSearchResults([]);
+    }
+  };
 
   // When selectedItem changes, update brand default
   useEffect(() => {
@@ -260,17 +286,18 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
           <div className="relative">
             <input
               type="text"
-              placeholder="Search by trade name, generic name, barcode, or code..."
+              placeholder="Search by trade name, generic name, barcode, or code (↑↓ Enter)..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 if (selectedItem) setSelectedItem(null);
               }}
-              className="w-full h-11 px-4 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm placeholder:text-on-surface-variant/60 focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              onKeyDown={handleSearchKeyDown}
+              className="w-full h-11 px-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:bg-white focus:border-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 transition-all shadow-sm"
               required
             />
             {searching && (
-              <span className="absolute right-3.5 top-3 text-on-surface-variant animate-spin material-symbols-outlined text-[20px]">
+              <span className="absolute right-3.5 top-3 text-slate-400 animate-spin material-symbols-outlined text-[20px]">
                 progress_activity
               </span>
             )}
@@ -281,43 +308,55 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
                   setSelectedItem(null);
                   setSearchQuery('');
                 }}
-                className="absolute right-3.5 top-3 text-on-surface-variant hover:text-on-surface cursor-pointer"
+                className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             )}
-          </div>
 
-          {/* Autocomplete Dropdown */}
-          {searchResults.length > 0 && !selectedItem && (
-            <div className="absolute top-16 z-30 w-full bg-surface-container-lowest border border-outline-variant/30 rounded-2xl shadow-xl max-h-56 overflow-y-auto divide-y divide-surface-container">
-              {searchResults.map((item) => (
-                <button
-                  key={item._id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setSearchQuery(`${item.tradeName} (${item.genericName})`);
-                    setSearchResults([]);
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-surface-container-low flex items-center justify-between transition-colors cursor-pointer"
-                >
-                  <div>
-                    <span className="text-sm font-bold text-on-surface">{item.tradeName}</span>
-                    <span className="text-xs text-on-surface-variant ml-2">({item.genericName})</span>
-                    {item.brandName && (
-                      <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full ml-2">
-                        {item.brandName}
+            {/* Autocomplete Dropdown with Solid Background & High Z-Index */}
+            {searchResults.length > 0 && !selectedItem && (
+              <div className="absolute top-full mt-1.5 left-0 right-0 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex justify-between items-center">
+                  <span>Matches ({searchResults.length})</span>
+                  <span>Use ↑↓ to navigate · Enter to select</span>
+                </div>
+                {searchResults.map((item, idx) => {
+                  const isHighlighted = idx === selectedIndex;
+                  return (
+                    <button
+                      key={item._id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedItem(item);
+                        setSearchQuery(`${item.tradeName} (${item.genericName})`);
+                        setSearchResults([]);
+                      }}
+                      onMouseEnter={() => setSelectedIndex(idx)}
+                      className={`w-full text-left px-4 py-3 flex items-center justify-between transition-colors cursor-pointer ${
+                        isHighlighted
+                          ? 'bg-[#E7F6F3] dark:bg-teal-950/40 text-[#002F34] dark:text-teal-200'
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-100'
+                      }`}
+                    >
+                      <div>
+                        <span className="text-sm font-bold">{item.tradeName}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">({item.genericName})</span>
+                        {item.brandName && (
+                          <span className="text-[10px] text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 px-2 py-0.5 rounded-full ml-2 font-medium">
+                            {item.brandName}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-mono font-bold text-[#006059] dark:text-teal-400">
+                        ৳ {parseFloat(item.mrpPerPiece.toString() || '0').toFixed(2)} / pc
                       </span>
-                    )}
-                  </div>
-                  <span className="text-xs font-mono font-bold text-primary">
-                    ৳ {parseFloat(item.mrpPerPiece).toFixed(2)} / pc
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Selected Item Information Chip */}

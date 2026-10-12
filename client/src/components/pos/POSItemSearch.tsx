@@ -4,12 +4,14 @@ import { searchItems } from '../../services/itemApi';
 
 interface POSItemSearchProps {
   onSelectItem: (item: Item) => void;
+  onQuickCheckout?: () => void;
   productInputRef?: React.RefObject<HTMLInputElement | null>;
   genericInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export const POSItemSearch: React.FC<POSItemSearchProps> = ({
   onSelectItem,
+  onQuickCheckout,
   productInputRef,
   genericInputRef,
 }) => {
@@ -26,6 +28,7 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({
 
     if (!hasProduct && !hasGeneric) {
       setResults([]);
+      setSelectedIndex(0);
       return;
     }
 
@@ -50,7 +53,13 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({
   }, [productQuery, genericQuery]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (results.length === 0) return;
+    if (results.length === 0) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onQuickCheckout?.();
+      }
+      return;
+    }
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -65,6 +74,7 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({
         setProductQuery('');
         setGenericQuery('');
         setResults([]);
+        setSelectedIndex(0);
       }
     } else if (e.key === 'Escape') {
       setResults([]);

@@ -13,6 +13,7 @@ export const createItemSchema = z.object({
   genericName: z.string().min(1, 'Generic name is required').trim(),
   itemCode: z.string().trim().optional(),
   category: z.string().min(1, 'Category is required').trim(),
+  productCategory: z.enum(['Medicine', 'Baby food', 'Non food', 'Consumer']).optional().default('Medicine'),
   manufacturer: z.string().min(1, 'Manufacturer is required').trim(),
   brandName: z.string().trim().optional().default(''),
   barcodes: z.array(z.string().trim()).optional().default([]),
@@ -55,6 +56,7 @@ export async function getItems(req: Request, res: Response): Promise<void> {
     const genericName = ((req.query.genericName || req.query.generic) as string)?.trim();
     const search = (req.query.search as string)?.trim();
     const category = (req.query.category as string)?.trim();
+    const productCategory = (req.query.productCategory as string)?.trim();
     const activeFilter = req.query.isActive;
     const sortBy = (req.query.sortBy as string)?.toLowerCase() || 'name';
     const sortOrder = (req.query.sortOrder as string)?.toLowerCase() === 'desc' ? -1 : 1;
@@ -67,6 +69,10 @@ export async function getItems(req: Request, res: Response): Promise<void> {
 
     if (category) {
       query.category = category;
+    }
+
+    if (productCategory) {
+      query.productCategory = productCategory;
     }
 
     if (productName) {
@@ -320,6 +326,7 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
         genericName: item.genericName,
         itemCode: item.itemCode,
         category: item.category,
+        productCategory: item.productCategory || 'Medicine',
         manufacturer: item.manufacturer,
         brandName: item.brandName || '',
         barcodes: item.barcodes || [],
@@ -459,6 +466,7 @@ export async function updateItem(req: AuthenticatedRequest, res: Response): Prom
     if (validated.tradeName !== undefined) item.tradeName = validated.tradeName;
     if (validated.genericName !== undefined) item.genericName = validated.genericName;
     if (validated.category !== undefined) item.category = validated.category;
+    if (validated.productCategory !== undefined) item.productCategory = validated.productCategory;
     if (validated.manufacturer !== undefined) item.manufacturer = validated.manufacturer;
     if (validated.brandName !== undefined) item.brandName = validated.brandName;
     if (validated.barcodes !== undefined) item.barcodes = validated.barcodes;

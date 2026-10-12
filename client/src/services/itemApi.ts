@@ -8,6 +8,7 @@ export interface GetItemsParams {
   productName?: string;
   genericName?: string;
   category?: string;
+  productCategory?: string;
   isActive?: boolean;
   sortBy?: 'name' | 'generic' | 'stock' | 'mrp' | 'createdAt';
   sortOrder?: 'asc' | 'desc';

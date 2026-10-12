@@ -20,6 +20,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   const [tradeName, setTradeName] = useState('');
   const [genericName, setGenericName] = useState('');
   const [category, setCategory] = useState('Tablet');
+  const [productCategory, setProductCategory] = useState<'Medicine' | 'Baby food' | 'Non food' | 'Consumer'>('Medicine');
   const [brandName, setBrandName] = useState('');
   const [customBrand, setCustomBrand] = useState('');
   const [isCustomBrand, setIsCustomBrand] = useState(false);
@@ -101,6 +102,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       setTradeName(itemToEdit.tradeName);
       setGenericName(itemToEdit.genericName);
       setCategory(itemToEdit.category || 'Tablet');
+      setProductCategory(itemToEdit.productCategory || 'Medicine');
       const itemBrand = itemToEdit.brandName || itemToEdit.manufacturer || '';
       if (itemBrand && !brands.includes(itemBrand)) {
         setIsCustomBrand(true);
@@ -123,6 +125,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       setTradeName('');
       setGenericName('');
       setCategory(categories[0] || 'Tablet');
+      setProductCategory('Medicine');
       setIsCustomBrand(false);
       setBrandName(brands[0] || 'Square Pharmaceuticals');
       setCustomBrand('');
@@ -181,6 +184,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
         tradeName: tradeName.trim(),
         genericName: genericName.trim(),
         category: category.trim(),
+        productCategory,
         manufacturer: finalBrand,
         brandName: finalBrand,
         barcodes: allBarcodes,
@@ -298,6 +302,37 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 <h3 className="text-sm font-bold text-[#002F34] tracking-tight">Product Identification & Brand</h3>
               </div>
               <span className="text-[11px] font-medium text-[#7A9894]">* Required for billing</span>
+            </div>
+
+            {/* Top Level Product Category Selector */}
+            <div>
+              <label className="block text-xs font-bold text-[#002F34] mb-1.5">
+                Product Category <span className="text-rose-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(['Medicine', 'Baby food', 'Non food', 'Consumer'] as const).map((cat) => {
+                  const isSelected = productCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setProductCategory(cat);
+                        if (cat !== 'Medicine' && !category) {
+                          setCategory('General / Piece');
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#002F34] text-white border-[#002F34] shadow-xs'
+                          : 'bg-white text-[#5F7D7A] border-[#DCE6E2] hover:bg-[#F2F7F5] hover:text-[#002F34]'
+                      }`}
+                    >
+                      <span>{cat}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Trade & Generic Name Rows */}

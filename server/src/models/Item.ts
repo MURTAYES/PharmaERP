@@ -8,11 +8,14 @@ export interface IUnitHierarchy {
   stripsPerBox?: number;
 }
 
+export type ProductCategory = 'Medicine' | 'Baby food' | 'Non food' | 'Consumer';
+
 export interface IItem extends Document {
   tradeName: string;
   genericName: string;
   itemCode: string;
   category: string;
+  productCategory: ProductCategory;
   manufacturer: string;
   brandName?: string;
   barcodes: string[];
@@ -60,6 +63,13 @@ const itemSchema = new Schema<IItem>(
     category: {
       type: String,
       required: [true, 'Category is required'],
+      trim: true,
+      index: true,
+    },
+    productCategory: {
+      type: String,
+      enum: ['Medicine', 'Baby food', 'Non food', 'Consumer'],
+      default: 'Medicine',
       trim: true,
       index: true,
     },

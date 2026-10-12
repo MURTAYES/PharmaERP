@@ -66,6 +66,7 @@ export interface Item {
   genericName: string;
   itemCode: string;
   category: string;
+  productCategory?: 'Medicine' | 'Baby food' | 'Non food' | 'Consumer';
   manufacturer: string;
   brandName?: string;
   barcodes?: string[];

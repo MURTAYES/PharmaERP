@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Invoice } from '../../types';
 import { useSettings } from '../../context/SettingsContext.tsx';
+import { formatMoney, parseMoney } from '../../utils/money';
 
 interface ThermalReceiptModalProps {
   isOpen: boolean;
@@ -29,10 +30,16 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#002F34]/40 backdrop-blur-[6px] transition-all">
-      <div className="relative w-full max-w-[560px] bg-white rounded-[28px] shadow-2xl border border-white/80 overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
-        <div className="px-6 py-4.5 bg-white border-b border-[#E8F0ED] flex items-center justify-between">
+    <div
+      id="thermal-receipt-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#002F34]/40 backdrop-blur-[6px] transition-all print:p-0 print:m-0 print:bg-transparent print:static print:block"
+    >
+      <div
+        id="thermal-receipt-card"
+        className="relative w-full max-w-[560px] bg-white rounded-[28px] shadow-2xl border border-white/80 overflow-hidden flex flex-col max-h-[92vh] print:shadow-none print:border-none print:max-w-none print:max-h-none print:w-auto print:static print:block print:rounded-none"
+      >
+        {/* Header - Hidden on print */}
+        <div className="no-print px-6 py-4.5 bg-white border-b border-[#E8F0ED] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#002F34] text-white flex items-center justify-center shadow-md shadow-[#002F34]/20">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,8 +59,8 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           </button>
         </div>
 
-        {/* Paper Selector & Print Bar */}
-        <div className="p-4 bg-[#F8FAF9] border-b border-[#E8F0ED] flex items-center justify-between gap-3">
+        {/* Paper Selector & Print Bar - Hidden on print */}
+        <div className="no-print p-4 bg-[#F8FAF9] border-b border-[#E8F0ED] flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-[#002F34]">Paper Size:</span>
             {(['80mm', '58mm'] as const).map((w) => (
@@ -74,7 +81,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
 
           <button
             onClick={handlePrint}
-            className="px-4 py-1.5 rounded-xl bg-[#002F34] text-white text-xs font-bold shadow-md shadow-[#002F34]/20 hover:bg-[#012428] flex items-center gap-1.5 transition-all"
+            className="px-4 py-1.5 rounded-xl bg-[#002F34] text-white text-xs font-bold shadow-md shadow-[#002F34]/20 hover:bg-[#012428] flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -84,15 +91,18 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
         </div>
 
         {/* Receipt Container */}
-        <div className="p-6 bg-[#EEF3F2] flex justify-center overflow-y-auto max-h-[55vh] custom-scrollbar">
+        <div
+          id="thermal-receipt-scroll"
+          className="p-6 bg-[#EEF3F2] flex justify-center overflow-y-auto max-h-[55vh] custom-scrollbar print:p-0 print:m-0 print:bg-transparent print:max-h-none print:overflow-visible print:block"
+        >
           <div
             id="thermal-receipt"
-            className={`bg-white text-black p-5 font-mono text-[11px] leading-tight shadow-md border border-gray-200 select-text ${
+            className={`bg-white text-black p-5 font-mono text-[11px] leading-tight shadow-md border border-gray-200 select-text print:shadow-none print:border-none print:p-2 print:m-0 print:block ${
               receiptWidth === '58mm' ? 'w-[58mm] text-[10px]' : 'w-[80mm]'
             }`}
           >
             {/* Pharmacy Header */}
-            <div className="text-center pb-3 border-b border-black border-dashed">
+            <div className="receipt-section text-center pb-3 border-b border-black border-dashed">
               <h2 className="font-extrabold text-sm uppercase tracking-wide">
                 {settings?.pharmacyName || 'PharmaERP Pharmacy'}
               </h2>
@@ -104,7 +114,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
             </div>
 
             {/* Invoice & Biller Info */}
-            <div className="py-2.5 border-b border-black border-dashed text-[10px] space-y-0.5">
+            <div className="receipt-section py-2.5 border-b border-black border-dashed text-[10px] space-y-0.5">
               <div className="flex justify-between">
                 <span>Invoice: <strong>{invoice.invoiceNumber}</strong></span>
                 <span>{formattedDate}</span>
@@ -133,7 +143,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {invoice.lines.map((line, idx) => (
-                  <tr key={idx}>
+                  <tr key={idx} className="receipt-row">
                     <td className="py-1">
                       <div className="font-bold">{line.tradeName}</div>
                       <div className="text-[8.5px] text-gray-700">
@@ -143,9 +153,9 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
                     <td className="py-1 text-center font-bold">
                       {line.quantity} {line.unit.slice(0, 1).toUpperCase()}
                     </td>
-                    <td className="py-1 text-right">৳{parseFloat(line.unitPrice).toFixed(2)}</td>
+                    <td className="py-1 text-right">৳{formatMoney(line.unitPrice)}</td>
                     <td className="py-1 text-right font-bold">
-                      ৳{parseFloat(line.lineTotal).toFixed(2)}
+                      ৳{formatMoney(line.lineTotal)}
                     </td>
                   </tr>
                 ))}
@@ -153,34 +163,34 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
             </table>
 
             {/* Summary */}
-            <div className="pt-2 border-t border-black border-dashed text-[10px] space-y-1">
+            <div className="receipt-section pt-2 border-t border-black border-dashed text-[10px] space-y-1">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span>৳ {parseFloat(invoice.subtotal).toFixed(2)}</span>
+                <span>৳ {formatMoney(invoice.subtotal)}</span>
               </div>
 
-              {parseFloat(invoice.discountAmount) > 0 && (
+              {parseMoney(invoice.discountAmount) > 0 && (
                 <div className="flex justify-between text-gray-800">
-                  <span>Discount ({parseFloat(invoice.discountPercent).toFixed(1)}%):</span>
-                  <span>- ৳ {parseFloat(invoice.discountAmount).toFixed(2)}</span>
+                  <span>Discount ({formatMoney(invoice.discountPercent, 1)}%):</span>
+                  <span>- ৳ {formatMoney(invoice.discountAmount)}</span>
                 </div>
               )}
 
               {invoice.charges?.map((c, i) => (
                 <div key={i} className="flex justify-between text-gray-800">
                   <span>{c.name}:</span>
-                  <span>+ ৳ {parseFloat(c.amount).toFixed(2)}</span>
+                  <span>+ ৳ {formatMoney(c.amount)}</span>
                 </div>
               ))}
 
               <div className="flex justify-between font-extrabold text-xs pt-1 border-t border-black">
                 <span>GRAND TOTAL:</span>
-                <span>৳ {parseFloat(invoice.grandTotal).toFixed(2)}</span>
+                <span>৳ {formatMoney(invoice.grandTotal)}</span>
               </div>
             </div>
 
             {/* Payment Info */}
-            <div className="py-2 border-t border-b border-black border-dashed text-[10px] space-y-0.5">
+            <div className="receipt-section py-2 border-t border-b border-black border-dashed text-[10px] space-y-0.5">
               <div className="flex justify-between">
                 <span>Payment Method:</span>
                 <span className="font-bold uppercase">{invoice.payment.method}</span>
@@ -188,13 +198,13 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
               {invoice.payment.cashTendered && (
                 <div className="flex justify-between">
                   <span>Cash Tendered:</span>
-                  <span>৳ {parseFloat(invoice.payment.cashTendered).toFixed(2)}</span>
+                  <span>৳ {formatMoney(invoice.payment.cashTendered)}</span>
                 </div>
               )}
               {invoice.payment.changeDue && (
                 <div className="flex justify-between font-bold">
                   <span>Change Due:</span>
-                  <span>৳ {parseFloat(invoice.payment.changeDue).toFixed(2)}</span>
+                  <span>৳ {formatMoney(invoice.payment.changeDue)}</span>
                 </div>
               )}
               {invoice.payment.mfsProvider && (
@@ -212,7 +222,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="text-center pt-2.5 text-[9px] text-gray-700">
+            <div className="receipt-section text-center pt-2.5 text-[9px] text-gray-700">
               <p>{settings?.receiptFooter || 'Thank you for choosing us! Get well soon.'}</p>
               <p className="mt-1 font-mono text-[8px] tracking-widest text-gray-500">
                 * * * POWERED BY PHARMAERP * * *
@@ -221,33 +231,102 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           </div>
         </div>
 
-        {/* Global Print Stylesheet */}
+        {/* Global Print Stylesheet for Continuous Roll Printing without page breaks */}
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            body * {
-              visibility: hidden;
+            @page {
+              size: auto;
+              margin: 0mm;
             }
-            #thermal-receipt, #thermal-receipt * {
-              visibility: visible;
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+              min-height: 0 !important;
+              max-height: none !important;
+              overflow: visible !important;
+              background: transparent !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            body > * {
+              display: none !important;
+            }
+            body > #root, body > div {
+              display: block !important;
+            }
+            .no-print {
+              display: none !important;
+            }
+            #thermal-receipt-modal {
+              position: static !important;
+              display: block !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 100% !important;
+              height: auto !important;
+              overflow: visible !important;
+              background: transparent !important;
+            }
+            #thermal-receipt-card {
+              position: static !important;
+              display: block !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              height: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
+              box-shadow: none !important;
+              border: none !important;
+              background: transparent !important;
+            }
+            #thermal-receipt-scroll {
+              position: static !important;
+              display: block !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 100% !important;
+              height: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
+              background: transparent !important;
             }
             #thermal-receipt {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: ${receiptWidth};
-              padding: 4mm;
-              box-shadow: none;
-              border: none;
+              position: static !important;
+              display: block !important;
+              margin: 0 auto !important;
+              width: ${receiptWidth} !important;
+              max-width: 100% !important;
+              padding: 2mm 3mm !important;
+              box-shadow: none !important;
+              border: none !important;
+              page-break-inside: auto !important;
+              break-inside: auto !important;
+              page-break-before: avoid !important;
+              break-before: avoid !important;
+              page-break-after: avoid !important;
+              break-after: avoid !important;
             }
-            @page {
-              size: ${receiptWidth} auto;
-              margin: 0;
+            #thermal-receipt table {
+              width: 100% !important;
+              page-break-inside: auto !important;
+              break-inside: auto !important;
+            }
+            #thermal-receipt tr,
+            #thermal-receipt th,
+            #thermal-receipt td,
+            .receipt-row,
+            .receipt-section {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
             }
           }
         `}} />
 
-        {/* Modal Footer */}
-        <div className="px-6 py-3.5 bg-white border-t border-[#E8F0ED] flex justify-end">
+        {/* Modal Footer - Hidden on print */}
+        <div className="no-print px-6 py-3.5 bg-white border-t border-[#E8F0ED] flex justify-end">
           <button
             type="button"
             onClick={onClose}

@@ -6,6 +6,7 @@ import { ThermalReceiptModal } from '../components/pos/ThermalReceiptModal';
 import { SalesReturnModal } from '../components/returns/SalesReturnModal';
 import { CreditNoteReceiptModal } from '../components/returns/CreditNoteReceiptModal';
 import { Button } from '../components/common/Button';
+import { formatMoney } from '../utils/money';
 
 export const Invoices: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -198,7 +199,7 @@ export const Invoices: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-extrabold text-sm text-on-surface">
-                        ৳ {parseFloat(inv.grandTotal).toFixed(2)}
+                        ৳ {formatMoney(inv.grandTotal)}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
