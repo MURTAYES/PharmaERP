@@ -6,6 +6,7 @@ import { Input } from '../common/Input';
 import { Item } from '../../types';
 import { searchItems } from '../../services/itemApi';
 import { receiveBatch } from '../../services/batchApi';
+import { getSettings } from '../../services/settingsApi';
 import { useAuth } from '../../context/AuthContext';
 
 interface StockReceivingModalProps {
@@ -31,24 +32,67 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
 
   const [batchNumber, setBatchNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState(() => {
-    // Default to next year same month for convenience
     const d = new Date();
     d.setFullYear(d.getFullYear() + 2);
     const month = String(d.getMonth() + 1).padStart(2, '0');
     return `${d.getFullYear()}-${month}`;
   });
-  const [unit, setUnit] = useState<'piece' | 'strip' | 'box'>('box');
+  const [unit, setUnit] = useState<'box' | 'piece'>('box');
   const [quantity, setQuantity] = useState('1');
   const [purchasePrice, setPurchasePrice] = useState('');
-  const [supplierName, setSupplierName] = useState('');
+  const [brandName, setBrandName] = useState('');
+  const [customBrand, setCustomBrand] = useState('');
+  const [isCustomBrand, setIsCustomBrand] = useState(false);
+  const [barcode, setBarcode] = useState('');
+  const [qrCode, setQrCode] = useState('');
+  const [brands, setBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Load configured brands from settings
+  useEffect(() => {
+    getSettings()
+      .then((res: any) => {
+        const brandList = res.settings?.brands || res.brands || [];
+        const defaultBrands = [
+          'Square Pharmaceuticals',
+          'Beximco Pharma',
+          'Incepta Pharmaceuticals',
+          'Renata Limited',
+          'Opsonin Pharma',
+          'ACME Laboratories',
+          'Eskayef Pharmaceuticals',
+          'Aristopharma',
+          'ACI Limited',
+          'Healthcare Pharmaceuticals',
+          'Popular Pharmaceuticals',
+          'Radiant Pharmaceuticals',
+        ];
+        const combined = Array.from(new Set([...brandList, ...defaultBrands]));
+        setBrands(combined);
+      })
+      .catch(() => {
+        setBrands([
+          'Square Pharmaceuticals',
+          'Beximco Pharma',
+          'Incepta Pharmaceuticals',
+          'Renata Limited',
+          'Opsonin Pharma',
+        ]);
+      });
+  }, []);
 
   useEffect(() => {
     if (preselectedItem) {
       setSelectedItem(preselectedItem);
       setSearchQuery(`${preselectedItem.tradeName} (${preselectedItem.genericName})`);
+      const itemBrand = preselectedItem.brandName || preselectedItem.manufacturer || '';
+      if (itemBrand) {
+        setBrandName(itemBrand);
+        setIsCustomBrand(!brands.includes(itemBrand));
+        setCustomBrand(itemBrand);
+      }
     } else {
       setSelectedItem(null);
       setSearchQuery('');
@@ -61,7 +105,8 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
     setUnit('box');
     setQuantity('1');
     setPurchasePrice('');
-    setSupplierName('');
+    setBarcode('');
+    setQrCode('');
     setError(null);
     setSuccessMsg(null);
   }, [preselectedItem, isOpen]);
@@ -88,26 +133,46 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery, selectedItem]);
 
-  // Calculate total converted pieces (Strict whole integers only)
+  // When selectedItem changes, update brand default
+  useEffect(() => {
+    if (selectedItem) {
+      const itemBrand = selectedItem.brandName || selectedItem.manufacturer || '';
+      if (itemBrand) {
+        if (brands.includes(itemBrand)) {
+          setBrandName(itemBrand);
+          setIsCustomBrand(false);
+        } else {
+          setIsCustomBrand(true);
+          setCustomBrand(itemBrand);
+          setBrandName('__custom');
+        }
+      } else if (brands.length > 0 && !brandName) {
+        setBrandName(brands[0]);
+      }
+    }
+  }, [selectedItem, brands]);
+
+  // Calculate total converted pieces (Box contains piecesPerBox, Piece is 1)
   let totalCalculatedPieces = 0;
   let estimatedCostPerPiece = '';
 
   if (selectedItem) {
-    const pcsPerStrip = selectedItem.unitHierarchy?.piecesPerStrip || 1;
-    const stripsPerBox = selectedItem.unitHierarchy?.stripsPerBox || 1;
-    const totalPcsBox = pcsPerStrip * stripsPerBox;
+    const pcsPerBox =
+      selectedItem.unitHierarchy?.piecesPerBox ||
+      selectedItem.totalPiecesPerBox ||
+      (selectedItem.unitHierarchy?.piecesPerStrip && selectedItem.unitHierarchy?.stripsPerBox
+        ? selectedItem.unitHierarchy.piecesPerStrip * selectedItem.unitHierarchy.stripsPerBox
+        : 10);
     const qtyInt = parseInt(quantity, 10) || 0;
 
     if (unit === 'piece') totalCalculatedPieces = qtyInt;
-    else if (unit === 'strip') totalCalculatedPieces = qtyInt * pcsPerStrip;
-    else if (unit === 'box') totalCalculatedPieces = qtyInt * totalPcsBox;
+    else if (unit === 'box') totalCalculatedPieces = qtyInt * pcsPerBox;
 
     if (isOwner && purchasePrice && qtyInt > 0) {
       try {
         const priceDec = new Decimal(purchasePrice);
         let costPerPiece = priceDec;
-        if (unit === 'strip') costPerPiece = priceDec.dividedBy(pcsPerStrip);
-        else if (unit === 'box') costPerPiece = priceDec.dividedBy(totalPcsBox);
+        if (unit === 'box') costPerPiece = priceDec.dividedBy(pcsPerBox);
         estimatedCostPerPiece = costPerPiece.toFixed(2);
       } catch {}
     }
@@ -131,6 +196,8 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
       return;
     }
 
+    const finalBrand = (isCustomBrand ? customBrand : brandName || customBrand || '').trim();
+
     setError(null);
     setLoading(true);
 
@@ -142,7 +209,10 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
         unit,
         quantity: qtyInt,
         purchasePrice: isOwner && purchasePrice ? purchasePrice : undefined,
-        supplierName: supplierName.trim(),
+        brandName: finalBrand,
+        supplierName: finalBrand,
+        barcode: barcode.trim() || undefined,
+        qrCode: qrCode.trim() || undefined,
       });
 
       setSuccessMsg(res.message);
@@ -156,6 +226,14 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
       setLoading(false);
     }
   };
+
+  const pcsInBox = selectedItem
+    ? selectedItem.unitHierarchy?.piecesPerBox ||
+      selectedItem.totalPiecesPerBox ||
+      (selectedItem.unitHierarchy?.piecesPerStrip && selectedItem.unitHierarchy?.stripsPerBox
+        ? selectedItem.unitHierarchy.piecesPerStrip * selectedItem.unitHierarchy.stripsPerBox
+        : 10)
+    : 10;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Stock Receiving & Batch Ingestion" maxWidth="lg">
@@ -182,7 +260,7 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
           <div className="relative">
             <input
               type="text"
-              placeholder="Search by trade name, generic name, or code..."
+              placeholder="Search by trade name, generic name, barcode, or code..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -227,6 +305,11 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
                   <div>
                     <span className="text-sm font-bold text-on-surface">{item.tradeName}</span>
                     <span className="text-xs text-on-surface-variant ml-2">({item.genericName})</span>
+                    {item.brandName && (
+                      <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full ml-2">
+                        {item.brandName}
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs font-mono font-bold text-primary">
                     ৳ {parseFloat(item.mrpPerPiece).toFixed(2)} / pc
@@ -243,11 +326,7 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
             <div>
               <span className="font-bold">{selectedItem.tradeName}</span> —{' '}
               <span className="text-on-surface-variant">
-                {selectedItem.unitHierarchy?.piecesPerStrip} pcs/strip,{' '}
-                {selectedItem.unitHierarchy?.stripsPerBox} strips/box (
-                {(selectedItem.unitHierarchy?.piecesPerStrip || 1) *
-                  (selectedItem.unitHierarchy?.stripsPerBox || 1)}{' '}
-                pcs/box)
+                1 Box = {pcsInBox} Pieces · Counter Sale: Piece (pc)
               </span>
             </div>
             <span className="font-mono font-bold bg-surface-container-lowest px-2.5 py-1 rounded-lg border border-primary/20">
@@ -278,20 +357,20 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
               required
             />
             <span className="text-[11px] text-on-surface-variant">
-              Select expiry month/year (auto-resolves to last calendar day of the month)
+              Resolves to last calendar day of the month
             </span>
           </div>
         </div>
 
-        {/* Receiving Unit & Quantity */}
+        {/* Receiving Unit (Box or Piece) & Quantity */}
         <div className="p-4 bg-surface-container-low rounded-2xl border border-surface-container space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-on-surface uppercase tracking-wider">
-              Quantity & Unit Received
+              Receiving Unit & Quantity
             </span>
             {totalCalculatedPieces > 0 && (
               <span className="text-xs font-mono font-bold text-primary bg-primary-container/15 px-3 py-1 rounded-lg border border-primary/20">
-                Total: {totalCalculatedPieces} Pieces
+                Total Sellable Stock: {totalCalculatedPieces} Pieces
               </span>
             )}
           </div>
@@ -301,19 +380,22 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
               <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                 Receiving Unit
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['box', 'strip', 'piece'] as const).map((u) => (
+              <div className="grid grid-cols-2 gap-2">
+                {(['box', 'piece'] as const).map((u) => (
                   <button
                     key={u}
                     type="button"
                     onClick={() => setUnit(u)}
-                    className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all capitalize cursor-pointer ${
+                    className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all capitalize cursor-pointer flex items-center justify-center gap-1.5 ${
                       unit === u
                         ? 'bg-primary text-on-primary border-primary shadow-sm'
                         : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/30 hover:bg-surface-container'
                     }`}
                   >
-                    {u}
+                    <span className="material-symbols-outlined text-[16px]">
+                      {u === 'box' ? 'inventory_2' : 'medication'}
+                    </span>
+                    <span>{u === 'box' ? `Box (${pcsInBox} pcs)` : 'Piece (Single)'}</span>
                   </button>
                 ))}
               </div>
@@ -339,8 +421,57 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
           </div>
         </div>
 
-        {/* Purchase Price (Owner) & Supplier Name */}
+        {/* Brand Name Dropdown & Purchase Cost */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Brand Name Dropdown */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                Brand Name <span className="text-primary font-bold">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCustomBrand(!isCustomBrand);
+                  if (!isCustomBrand) setBrandName('__custom');
+                  else setBrandName(brands[0] || '');
+                }}
+                className="text-[10px] font-semibold text-primary hover:underline"
+              >
+                {isCustomBrand ? 'Select from list' : '+ Custom brand'}
+              </button>
+            </div>
+            {isCustomBrand ? (
+              <input
+                type="text"
+                placeholder="Enter brand name..."
+                value={customBrand}
+                onChange={(e) => setCustomBrand(e.target.value)}
+                className="w-full h-11 px-4 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            ) : (
+              <select
+                value={brandName}
+                onChange={(e) => {
+                  if (e.target.value === '__custom') {
+                    setIsCustomBrand(true);
+                  } else {
+                    setBrandName(e.target.value);
+                  }
+                }}
+                className="w-full h-11 px-4 bg-surface-container-low border border-transparent rounded-xl text-on-surface text-sm focus:bg-surface-container-lowest focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+              >
+                {brands.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+                <option value="__custom">+ Custom brand...</option>
+              </select>
+            )}
+          </div>
+
+          {/* Purchase Cost (Owner Only) */}
           {isOwner ? (
             <Input
               label={`Purchase Cost (৳) [Per ${unit}]`}
@@ -359,16 +490,37 @@ export const StockReceivingModal: React.FC<StockReceivingModalProps> = ({
           ) : (
             <div className="p-3 bg-surface-container-low border border-surface-container rounded-xl text-xs text-on-surface-variant flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px] text-primary">info</span>
-              Pharmacist receiving: purchase price will be flagged as cost-missing for owner review.
+              Pharmacist receiving: purchase price flagged as cost-missing for owner review.
             </div>
           )}
+        </div>
 
-          <Input
-            label="Supplier / Distributor Name"
-            placeholder="e.g. Square Pharma Central Depot"
-            value={supplierName}
-            onChange={(e) => setSupplierName(e.target.value)}
-          />
+        {/* Barcode and QR Code for Batch (Optional) */}
+        <div className="p-4 bg-surface-container-low rounded-2xl border border-surface-container space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[18px]">barcode_scanner</span>
+            <span className="text-xs font-bold text-on-surface uppercase tracking-wider">
+              Batch Barcode & QR Code (Optional)
+            </span>
+          </div>
+          <p className="text-[11px] text-on-surface-variant">
+            If this batch has its own barcode, enter or scan it below. It will automatically link to the medicine so scanning it at the counter matches this product.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            <Input
+              label="Batch Barcode"
+              placeholder="Scan or enter barcode..."
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+            />
+            <Input
+              label="Batch QR Code"
+              placeholder="Scan or enter QR code string..."
+              value={qrCode}
+              onChange={(e) => setQrCode(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-3 border-t border-surface-container">

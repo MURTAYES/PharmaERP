@@ -11,6 +11,9 @@ export interface IBatch extends Document {
   purchasePricePerPiece?: Types.Decimal128;
   isCostMissing: boolean;
   supplierName?: string;
+  brandName?: string;
+  barcode?: string;
+  qrCode?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +68,24 @@ const batchSchema = new Schema<IBatch>(
       type: String,
       default: '',
       trim: true,
+    },
+    brandName: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
+    },
+    barcode: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
+    },
+    qrCode: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
     },
   },
   {

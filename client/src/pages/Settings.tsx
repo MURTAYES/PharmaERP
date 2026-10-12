@@ -24,6 +24,7 @@ export function Settings() {
     charges: [],
     expiryAlertWindows: { greenDays: 90, yellowDays: 60, redDays: 30 },
     categories: [],
+    brands: [],
   });
 
   // State for adding a new charge
@@ -33,6 +34,9 @@ export function Settings() {
 
   // State for adding a new category
   const [newCategory, setNewCategory] = useState('');
+
+  // State for adding a new brand
+  const [newBrand, setNewBrand] = useState('');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -111,6 +115,24 @@ export function Settings() {
     setForm({
       ...form,
       categories: form.categories.filter((c) => c !== cat),
+    });
+  };
+
+  const handleAddBrand = () => {
+    if (!newBrand.trim()) return;
+    const currentBrands = form.brands || [];
+    if (currentBrands.includes(newBrand.trim())) return;
+    setForm({
+      ...form,
+      brands: [...currentBrands, newBrand.trim()],
+    });
+    setNewBrand('');
+  };
+
+  const handleRemoveBrand = (brandName: string) => {
+    setForm({
+      ...form,
+      brands: (form.brands || []).filter((b) => b !== brandName),
     });
   };
 
@@ -414,7 +436,7 @@ export function Settings() {
             </div>
           </Card>
 
-          {/* Medicine Categories Manager Card */}
+            {/* Medicine Categories Manager Card */}
           <Card className="flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-surface-container pb-3">
               <span className="material-symbols-outlined text-primary text-[22px]">category</span>
@@ -440,7 +462,7 @@ export function Settings() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="New Category Name..."
+                placeholder="New Category Name (e.g. Pot (PT))..."
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
@@ -448,6 +470,50 @@ export function Settings() {
               />
               <Button type="button" variant="outline" size="sm" onClick={handleAddCategory}>
                 Add
+              </Button>
+            </div>
+          </Card>
+
+          {/* Medicine Brands Manager Card */}
+          <Card className="flex flex-col gap-4">
+            <div className="flex items-center gap-2 border-b border-surface-container pb-3">
+              <span className="material-symbols-outlined text-primary text-[22px]">verified</span>
+              <h2 className="text-base font-bold text-on-surface">Medicine Brands</h2>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              Manage pharmaceutical brand names. These appear in receiving and product registration dropdowns.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {form.brands?.map((brand) => (
+                <span
+                  key={brand}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-900"
+                >
+                  <span>{brand}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveBrand(brand)}
+                    className="text-emerald-700 hover:text-error ml-0.5"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                </span>
+              ))}
+              {(!form.brands || form.brands.length === 0) && (
+                <span className="text-xs text-on-surface-variant italic">No brands configured yet.</span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="New Brand Name (e.g. Square, Beximco, Incepta)..."
+                value={newBrand}
+                onChange={(e) => setNewBrand(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddBrand())}
+                className="flex-1 h-9 px-3 bg-surface-container-low rounded-lg text-xs text-on-surface border border-transparent focus:border-primary focus:outline-none"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={handleAddBrand}>
+                Add Brand
               </Button>
             </div>
           </Card>

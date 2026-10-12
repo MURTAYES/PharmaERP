@@ -20,52 +20,78 @@ export const ItemModal: React.FC<ItemModalProps> = ({
   const [tradeName, setTradeName] = useState('');
   const [genericName, setGenericName] = useState('');
   const [category, setCategory] = useState('Tablet');
-  const [manufacturer, setManufacturer] = useState('');
+  const [brandName, setBrandName] = useState('');
+  const [customBrand, setCustomBrand] = useState('');
+  const [isCustomBrand, setIsCustomBrand] = useState(false);
   const [shelfLocation, setShelfLocation] = useState('');
   const [itemCode, setItemCode] = useState('');
-  const [piecesPerStrip, setPiecesPerStrip] = useState('10');
-  const [stripsPerBox, setStripsPerBox] = useState('10');
+  const [piecesPerBox, setPiecesPerBox] = useState('10');
   const [mrpPerPiece, setMrpPerPiece] = useState('2.50');
+  const [barcodes, setBarcodes] = useState<string[]>([]);
+  const [newBarcode, setNewBarcode] = useState('');
+  const [qrCode, setQrCode] = useState('');
   const [lowStockThresholdPieces, setLowStockThresholdPieces] = useState('20');
   const [categories, setCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getSettings()
       .then((res: any) => {
-        const catList = res.settings?.categories || res.categories;
-        if (catList && catList.length > 0) {
-          setCategories(catList);
-        } else {
-          setCategories([
-            'Tablet',
-            'Capsule',
-            'Syrup',
-            'Suspension',
-            'Injection',
-            'Ointment',
-            'Drops',
-            'Inhaler',
-            'Cream',
-            'Gel',
-            'Solution',
-          ]);
-        }
+        const catList = res.settings?.categories || res.categories || [];
+        const defaultCats = [
+          'Tablet',
+          'Capsule',
+          'Syrup / Suspension',
+          'Pot (PT)',
+          'Injection',
+          'Ointment / Cream',
+          'Eye / Ear Drops',
+          'Inhaler',
+          'Suppository',
+          'Medical Device / Surgical',
+        ];
+        // Combine ensuring 'Pot (PT)' is always available
+        const combinedCats = Array.from(new Set([...catList, ...defaultCats]));
+        setCategories(combinedCats);
+
+        const brandList = res.settings?.brands || res.brands || [];
+        const defaultBrands = [
+          'Square Pharmaceuticals',
+          'Beximco Pharma',
+          'Incepta Pharmaceuticals',
+          'Renata Limited',
+          'Opsonin Pharma',
+          'ACME Laboratories',
+          'Eskayef Pharmaceuticals',
+          'Aristopharma',
+          'ACI Limited',
+          'Healthcare Pharmaceuticals',
+          'Popular Pharmaceuticals',
+          'Radiant Pharmaceuticals',
+        ];
+        const combinedBrands = Array.from(new Set([...brandList, ...defaultBrands]));
+        setBrands(combinedBrands);
       })
       .catch(() => {
         setCategories([
           'Tablet',
           'Capsule',
-          'Syrup',
-          'Suspension',
+          'Syrup / Suspension',
+          'Pot (PT)',
           'Injection',
-          'Ointment',
-          'Drops',
+          'Ointment / Cream',
+          'Eye / Ear Drops',
           'Inhaler',
-          'Cream',
-          'Gel',
-          'Solution',
+        ]);
+        setBrands([
+          'Square Pharmaceuticals',
+          'Beximco Pharma',
+          'Incepta Pharmaceuticals',
+          'Renata Limited',
+          'Opsonin Pharma',
+          'ACME Laboratories',
         ]);
       });
   }, []);
@@ -75,45 +101,69 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       setTradeName(itemToEdit.tradeName);
       setGenericName(itemToEdit.genericName);
       setCategory(itemToEdit.category || 'Tablet');
-      setManufacturer(itemToEdit.manufacturer || '');
+      const itemBrand = itemToEdit.brandName || itemToEdit.manufacturer || '';
+      if (itemBrand && !brands.includes(itemBrand)) {
+        setIsCustomBrand(true);
+        setCustomBrand(itemBrand);
+        setBrandName('__custom');
+      } else {
+        setIsCustomBrand(false);
+        setBrandName(itemBrand || (brands[0] || 'Square Pharmaceuticals'));
+      }
       setShelfLocation(itemToEdit.shelfLocation || '');
       setItemCode(itemToEdit.itemCode || '');
-      setPiecesPerStrip(String(itemToEdit.unitHierarchy?.piecesPerStrip || 10));
-      setStripsPerBox(String(itemToEdit.unitHierarchy?.stripsPerBox || 10));
+      const pcsBox = itemToEdit.unitHierarchy?.piecesPerBox || itemToEdit.totalPiecesPerBox || 10;
+      setPiecesPerBox(String(pcsBox));
       setMrpPerPiece(String(itemToEdit.mrpPerPiece || '2.50'));
       setLowStockThresholdPieces(String(itemToEdit.lowStockThresholdPieces || 20));
+      setBarcodes(itemToEdit.barcodes || []);
+      setQrCode(itemToEdit.qrCode || '');
+      setNewBarcode('');
     } else {
       setTradeName('');
       setGenericName('');
       setCategory(categories[0] || 'Tablet');
-      setManufacturer('');
+      setIsCustomBrand(false);
+      setBrandName(brands[0] || 'Square Pharmaceuticals');
+      setCustomBrand('');
       setShelfLocation('');
       setItemCode(`MED-${Math.floor(100000 + Math.random() * 900000)}`);
-      setPiecesPerStrip('10');
-      setStripsPerBox('10');
+      setPiecesPerBox('10');
       setMrpPerPiece('2.50');
       setLowStockThresholdPieces('20');
+      setBarcodes([]);
+      setQrCode('');
+      setNewBarcode('');
     }
     setError(null);
-  }, [itemToEdit, isOpen, categories]);
+  }, [itemToEdit, isOpen, categories, brands]);
 
   if (!isOpen) return null;
 
-  // Real-time live mathematical calculations
-  let stripPrice = '0.00';
+  // Real-time live derived box calculations
+  const pcs = Math.max(1, parseInt(piecesPerBox, 10) || 1);
   let boxPrice = '0.00';
-  let totalPiecesBox = 100;
-  const pcs = Math.max(1, parseInt(piecesPerStrip, 10) || 1);
-  const str = Math.max(1, parseInt(stripsPerBox, 10) || 1);
-
   try {
-    totalPiecesBox = pcs * str;
     const pieceDec = new Decimal(mrpPerPiece || 0);
-    stripPrice = pieceDec.times(pcs).toFixed(2);
-    boxPrice = pieceDec.times(totalPiecesBox).toFixed(2);
+    boxPrice = pieceDec.times(pcs).toFixed(2);
   } catch {
-    // defaults
+    boxPrice = '0.00';
   }
+
+  const handleAddBarcodeTag = () => {
+    const trimmed = newBarcode.trim();
+    if (!trimmed) return;
+    if (barcodes.includes(trimmed)) {
+      setNewBarcode('');
+      return;
+    }
+    setBarcodes([...barcodes, trimmed]);
+    setNewBarcode('');
+  };
+
+  const handleRemoveBarcodeTag = (code: string) => {
+    setBarcodes(barcodes.filter((b) => b !== code));
+  };
 
   const handleFormSubmit = async (e: React.FormEvent, addAnother = false) => {
     e.preventDefault();
@@ -121,17 +171,27 @@ export const ItemModal: React.FC<ItemModalProps> = ({
     setLoading(true);
 
     try {
+      const finalBrand = (isCustomBrand ? customBrand : brandName || customBrand || 'General').trim();
+      const allBarcodes = [...barcodes];
+      if (newBarcode.trim() && !allBarcodes.includes(newBarcode.trim())) {
+        allBarcodes.push(newBarcode.trim());
+      }
+
       const payload = {
         tradeName: tradeName.trim(),
         genericName: genericName.trim(),
         category: category.trim(),
-        manufacturer: manufacturer.trim(),
+        manufacturer: finalBrand,
+        brandName: finalBrand,
+        barcodes: allBarcodes,
+        qrCode: qrCode.trim(),
         shelfLocation: shelfLocation.trim(),
         itemCode: itemCode.trim() || undefined,
         unitHierarchy: {
           baseUnit: 'piece' as const,
-          piecesPerStrip: pcs,
-          stripsPerBox: str,
+          piecesPerBox: pcs,
+          piecesPerStrip: 1,
+          stripsPerBox: pcs,
         },
         mrpPerPiece,
         lowStockThresholdPieces: Math.max(0, parseInt(lowStockThresholdPieces, 10) || 0),
@@ -148,10 +208,12 @@ export const ItemModal: React.FC<ItemModalProps> = ({
       if (addAnother) {
         setTradeName('');
         setGenericName('');
-        setManufacturer('');
         setShelfLocation('');
         setItemCode(`MED-${Math.floor(100000 + Math.random() * 900000)}`);
         setMrpPerPiece('2.50');
+        setBarcodes([]);
+        setQrCode('');
+        setNewBarcode('');
       } else {
         onClose();
       }
@@ -186,7 +248,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 {itemToEdit ? 'Edit Master Product' : 'Add Master Product'}
               </h2>
               <p className="text-xs text-[#5F7D7A] font-medium tracking-normal mt-0.5">
-                Catalog definition & multi-unit pricing engine (Batches managed separately)
+                Product definition, brand, multi-barcodes & packaging ratio
               </p>
             </div>
           </div>
@@ -195,7 +257,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
           <div className="flex items-center gap-2.5">
             <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#E7F6F3] text-[#006059] border border-[#C5E8E0]">
               <span className="w-2 h-2 rounded-full bg-[#00A887] ring-4 ring-[#00A887]/20"></span>
-              Base Unit: Piece (pc)
+              Sales Unit: Piece (pc)
             </div>
 
             <button
@@ -226,16 +288,16 @@ export const ItemModal: React.FC<ItemModalProps> = ({
             </div>
           )}
 
-          {/* Section 1: Pharmaceutical Identification */}
+          {/* Section 1: Product Identification & Brand */}
           <div className="bg-[#F8FAF9] rounded-[24px] p-5 sm:p-6 border border-[#E8EFEA] shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <span className="w-6 h-6 rounded-lg bg-[#E7F6F3] text-[#004D40] text-xs font-bold flex items-center justify-center font-mono">
                   01
                 </span>
-                <h3 className="text-sm font-bold text-[#002F34] tracking-tight">Pharmaceutical Identification</h3>
+                <h3 className="text-sm font-bold text-[#002F34] tracking-tight">Product Identification & Brand</h3>
               </div>
-              <span className="text-[11px] font-medium text-[#7A9894]">* Required for search index</span>
+              <span className="text-[11px] font-medium text-[#7A9894]">* Required for billing</span>
             </div>
 
             {/* Trade & Generic Name Rows */}
@@ -274,34 +336,67 @@ export const ItemModal: React.FC<ItemModalProps> = ({
               </div>
             </div>
 
-            {/* Secondary Specs: SKU, Category, Manufacturer */}
+            {/* Brand Dropdown, Category, SKU */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+              {/* Brand Name Dropdown */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-[#002F34]" htmlFor="itemCode">
-                    SKU / Barcode ID
+                  <label className="block text-xs font-bold text-[#002F34]" htmlFor="brandSelect">
+                    Brand Name <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] uppercase font-bold text-[#007062] bg-[#E1F6F0] px-2 py-0.5 rounded-full border border-[#BCE8DD]">
-                    AUTO
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomBrand(!isCustomBrand);
+                      if (!isCustomBrand) setBrandName('__custom');
+                      else setBrandName(brands[0] || '');
+                    }}
+                    className="text-[10px] font-semibold text-primary hover:underline"
+                  >
+                    {isCustomBrand ? 'Select from list' : '+ Custom brand'}
+                  </button>
                 </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7A9894]">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                    </svg>
-                  </div>
+                {isCustomBrand ? (
                   <input
-                    id="itemCode"
-                    name="itemCode"
                     type="text"
-                    value={itemCode}
-                    onChange={(e) => setItemCode(e.target.value)}
-                    className="w-full pl-10 pr-3.5 py-2.5 bg-[#F0F5F3] border border-[#DCE6E2] rounded-2xl text-xs font-bold text-[#00383C] font-mono focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
+                    required
+                    placeholder="Enter custom brand..."
+                    value={customBrand}
+                    onChange={(e) => setCustomBrand(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-[#DCE6E2] rounded-2xl text-sm font-semibold text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
                   />
-                </div>
+                ) : (
+                  <div className="relative">
+                    <select
+                      id="brandSelect"
+                      required
+                      value={brandName}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom') {
+                          setIsCustomBrand(true);
+                        } else {
+                          setBrandName(e.target.value);
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 bg-white border border-[#DCE6E2] rounded-2xl text-sm font-semibold text-[#002F34] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] appearance-none cursor-pointer pr-10"
+                    >
+                      {brands.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                      <option value="__custom">+ Custom brand...</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#7A9894]">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* Dosage Category */}
               <div>
                 <label className="block text-xs font-bold text-[#002F34] mb-1.5" htmlFor="category">
                   Dosage Category <span className="text-rose-500">*</span>
@@ -329,25 +424,110 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 </div>
               </div>
 
+              {/* SKU / Item Code */}
               <div>
-                <label className="block text-xs font-bold text-[#002F34] mb-1.5" htmlFor="manufacturer">
-                  Manufacturer / Brand <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-[#002F34]" htmlFor="itemCode">
+                    System Code / SKU
+                  </label>
+                  <span className="text-[10px] uppercase font-bold text-[#007062] bg-[#E1F6F0] px-2 py-0.5 rounded-full border border-[#BCE8DD]">
+                    AUTO
+                  </span>
+                </div>
                 <input
-                  id="manufacturer"
-                  name="manufacturer"
+                  id="itemCode"
+                  name="itemCode"
                   type="text"
-                  required
-                  placeholder="e.g. Beximco, Square, ACME"
-                  value={manufacturer}
-                  onChange={(e) => setManufacturer(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-[#DCE6E2] rounded-2xl text-sm font-semibold text-[#002F34] placeholder:text-[#9FB7B2] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] transition-all"
+                  value={itemCode}
+                  onChange={(e) => setItemCode(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-[#F0F5F3] border border-[#DCE6E2] rounded-2xl text-xs font-bold text-[#00383C] font-mono focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
                 />
+              </div>
+            </div>
+
+            {/* Multi-Barcode and QR Code Row */}
+            <div className="pt-2 border-t border-[#E8EFEA] space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-[#002F34] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-primary">barcode_scanner</span>
+                    Barcodes & QR Codes <span className="text-[11px] font-normal text-[#7A9894]">(Both optional)</span>
+                  </h4>
+                  <p className="text-[11px] text-[#7A9894] mt-0.5">
+                    You can associate multiple barcodes (e.g. from different batches). Any scanned barcode will identify this product.
+                  </p>
+                </div>
+              </div>
+
+              {/* Barcodes tag list */}
+              {barcodes.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {barcodes.map((code) => (
+                    <span
+                      key={code}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-[#D5E3DE] text-xs font-mono font-bold text-[#002F34] shadow-2xs"
+                    >
+                      <span>{code}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBarcodeTag(code)}
+                        className="text-slate-400 hover:text-rose-600 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Barcode input */}
+                <div>
+                  <label className="block text-xs font-bold text-[#002F34] mb-1.5">
+                    Add Barcode
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Scan or type barcode..."
+                      value={newBarcode}
+                      onChange={(e) => setNewBarcode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddBarcodeTag();
+                        }
+                      }}
+                      className="flex-1 px-4 py-2 bg-white border border-[#DCE6E2] rounded-2xl text-xs font-mono font-semibold text-[#002F34] placeholder:text-[#9FB7B2] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddBarcodeTag}
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-[#002F34] rounded-2xl transition-colors cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* QR Code input */}
+                <div>
+                  <label className="block text-xs font-bold text-[#002F34] mb-1.5">
+                    QR Code Payload / String (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Scan or enter QR code string..."
+                    value={qrCode}
+                    onChange={(e) => setQrCode(e.target.value)}
+                    className="w-full px-4 py-2 bg-white border border-[#DCE6E2] rounded-2xl text-xs font-mono font-semibold text-[#002F34] placeholder:text-[#9FB7B2] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34]"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Multi-Unit Packaging & Live Derived Pricing Engine */}
+          {/* Section 2: Unit Pricing & Box Packaging Ratio */}
           <div className="bg-[#F8FAF9] rounded-[24px] p-5 sm:p-6 border border-[#E8EFEA] shadow-xs space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
@@ -356,29 +536,30 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 </span>
                 <div>
                   <h3 className="text-sm font-bold text-[#002F34] tracking-tight">
-                    Multi-Unit Pricing Engine & Hierarchy
+                    Pricing & Box Packaging Ratio
                   </h3>
+                  <p className="text-[11px] text-[#7A9894]">All counter sales are in Piece (pc). Box contains N pieces.</p>
                 </div>
               </div>
               <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#006059] bg-white px-3 py-1 rounded-full border border-[#D2E4DF] shadow-2xs self-start sm:self-auto">
-                <svg className="w-4 h-4 text-[#00A887]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                Auto Derived (Decimal128 Precision)
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Piece-Based Dispensary Engine
               </div>
             </div>
 
-            {/* 3 Core Pricing Engine Input Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {/* 2 Core Inputs: MRP Per Piece & Pieces Per Box */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* MRP Per Piece */}
               <div className="bg-white p-4 rounded-2xl border border-[#DCE6E2] shadow-2xs hover:border-[#B7D2CB] transition-colors">
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-[#002F34]" htmlFor="mrpPerPiece">
                     MRP Per Piece (৳) <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] font-medium text-[#7A9894] uppercase tracking-wider">Base</span>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Counter Sale Unit
+                  </span>
                 </div>
-                <p className="text-[11px] text-[#7A9894] mb-2.5">Single unit retail sale price</p>
+                <p className="text-[11px] text-[#7A9894] mb-2.5">Price charged per single piece/tablet/pot</p>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center font-bold text-[#004D40] text-base">
                     ৳
@@ -392,182 +573,81 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                     required
                     value={mrpPerPiece}
                     onChange={(e) => setMrpPerPiece(e.target.value)}
-                    className="w-full pl-8 pr-3.5 py-2 bg-[#F6FAF8] border border-[#D8E4E0] rounded-xl text-lg font-bold text-[#002F34] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] transition-all"
+                    className="w-full pl-8 pr-3.5 py-2.5 bg-[#F6FAF8] border border-[#D8E4E0] rounded-xl text-lg font-bold text-[#002F34] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] transition-all"
                   />
                 </div>
               </div>
 
-              {/* Pieces Per Strip */}
+              {/* Pieces Per Box */}
               <div className="bg-white p-4 rounded-2xl border border-[#DCE6E2] shadow-2xs hover:border-[#B7D2CB] transition-colors">
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-[#002F34]" htmlFor="piecesPerStrip">
-                    Pieces Per Strip <span className="text-rose-500">*</span>
+                  <label className="text-xs font-bold text-[#002F34]" htmlFor="piecesPerBox">
+                    Pieces Per Box <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] font-medium text-[#7A9894] uppercase tracking-wider">Mid Tier</span>
-                </div>
-                <p className="text-[11px] text-[#7A9894] mb-2.5">Blister foil unit count</p>
-                <div className="relative">
-                  <input
-                    id="piecesPerStrip"
-                    name="piecesPerStrip"
-                    type="number"
-                    step="1"
-                    min="1"
-                    required
-                    value={piecesPerStrip}
-                    onChange={(e) => setPiecesPerStrip(e.target.value)}
-                    className="w-full pl-3.5 pr-14 py-2 bg-[#F6FAF8] border border-[#D8E4E0] rounded-xl text-lg font-bold text-[#002F34] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] transition-all"
-                  />
-                  <span className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold text-[#7A9894]">
-                    pcs/strip
+                  <span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                    Stock Receiving Pack
                   </span>
                 </div>
-              </div>
-
-              {/* Strips Per Box */}
-              <div className="bg-white p-4 rounded-2xl border border-[#DCE6E2] shadow-2xs hover:border-[#B7D2CB] transition-colors">
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-[#002F34]" htmlFor="stripsPerBox">
-                    Strips Per Box <span className="text-rose-500">*</span>
-                  </label>
-                  <span className="text-[10px] font-medium text-[#7A9894] uppercase tracking-wider">Bulk Tier</span>
-                </div>
-                <p className="text-[11px] text-[#7A9894] mb-2.5">Box or carton count</p>
+                <p className="text-[11px] text-[#7A9894] mb-2.5">Total pieces inside 1 commercial box</p>
                 <div className="relative">
                   <input
-                    id="stripsPerBox"
-                    name="stripsPerBox"
+                    id="piecesPerBox"
+                    name="piecesPerBox"
                     type="number"
                     step="1"
                     min="1"
                     required
-                    value={stripsPerBox}
-                    onChange={(e) => setStripsPerBox(e.target.value)}
-                    className="w-full pl-3.5 pr-16 py-2 bg-[#F6FAF8] border border-[#D8E4E0] rounded-xl text-lg font-bold text-[#002F34] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] transition-all"
+                    value={piecesPerBox}
+                    onChange={(e) => setPiecesPerBox(e.target.value)}
+                    className="w-full pl-3.5 pr-16 py-2.5 bg-[#F6FAF8] border border-[#D8E4E0] rounded-xl text-lg font-bold text-[#002F34] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] transition-all"
                   />
                   <span className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold text-[#7A9894]">
-                    strips/box
+                    pieces/box
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Signature Live Computed Pricing Preview Card */}
-            <div className="bg-[#F1F6F4] border border-[#D5E3DE] rounded-[22px] p-5 text-[#002F34] relative overflow-hidden transition-all">
-              {/* Header row */}
-              <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#D5E3DE]/70 mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-xl bg-[#E3F5F0] text-[#006A61] flex items-center justify-center border border-[#CBEAE2] shadow-2xs">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-[#002F34]">
-                        Live Computed Pricing Preview
-                      </span>
-                      <span className="text-[9px] uppercase font-bold text-[#007062] bg-[#E1F6F0] px-2 py-0.5 rounded-full border border-[#BCE8DD]">
-                        Active Engine
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#5C7470] font-normal mt-0.5">
-                      Multi-tier sales rate derived instantly from base unit MRP
-                    </p>
-                  </div>
-                </div>
-
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-[#00574F] bg-white/80 px-3.5 py-1.5 rounded-full border border-[#D5E3DE] shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00A887]"></span>
-                  <span>Pack Ratio:</span>
-                  <span className="font-mono font-bold text-[#002F34]">
-                    1 Box = <span className="text-[#007062]">{totalPiecesBox}</span> Pcs
+            {/* Derived Pricing Preview */}
+            <div className="bg-[#F1F6F4] border border-[#D5E3DE] rounded-[22px] p-5 text-[#002F34]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#D5E3DE]/70 mb-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold tracking-wider uppercase text-[#002F34]">
+                    Computed Pricing Preview
                   </span>
+                </div>
+                <div className="text-xs font-mono font-bold text-[#006059]">
+                  1 Box = {pcs} Pieces
                 </div>
               </div>
 
-              {/* 3 Tier Cards */}
-              <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                {/* Level 1: Base Unit */}
-                <div className="bg-white border border-[#DEE8E5] rounded-[18px] p-4 shadow-sm hover:border-[#97D8D0] transition-colors flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#47635F] bg-[#F0F5F3] px-2 py-0.5 rounded-full border border-[#E2EAE7]">
-                        Level 1 · Base Unit
-                      </span>
-                      <span className="text-[11px] font-mono text-[#7A9894]">1 pc</span>
-                    </div>
-                    <span className="text-xs font-medium text-[#607774] block">Retail Single Unit</span>
-                    <div className="mt-2 flex items-baseline gap-1.5">
-                      <span className="text-base font-bold text-[#007062]">৳</span>
-                      <span className="text-2xl font-bold tracking-tight text-[#002F34] font-mono">
-                        {parseFloat(mrpPerPiece || '0').toFixed(2)}
-                      </span>
-                      <span className="text-[11px] text-[#7A9894] font-normal">/ pc</span>
-                    </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="bg-white border border-[#DEE8E5] rounded-xl p-4 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#47635F] bg-[#F0F5F3] px-2 py-0.5 rounded-full">
+                    Single Piece Rate
+                  </span>
+                  <div className="mt-2 flex items-baseline gap-1">
+                    <span className="text-base font-bold text-[#007062]">৳</span>
+                    <span className="text-2xl font-bold font-mono text-[#002F34]">
+                      {parseFloat(mrpPerPiece || '0').toFixed(2)}
+                    </span>
+                    <span className="text-xs text-[#7A9894]">/ pc</span>
                   </div>
-                  <div className="pt-3 mt-3 border-t border-[#EEF3F2] flex items-center justify-between text-[10px]">
-                    <span className="text-[#6A817E] font-mono">POS dispensing unit</span>
-                    <span className="font-semibold text-[#007062]">Base Price</span>
-                  </div>
+                  <span className="text-[11px] text-[#607774] mt-1 block">Counter selling unit</span>
                 </div>
 
-                {/* Level 2: Strip Pack */}
-                <div className="bg-white border border-[#DEE8E5] rounded-[18px] p-4 shadow-sm hover:border-[#97D8D0] transition-colors flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#47635F] bg-[#F0F5F3] px-2 py-0.5 rounded-full border border-[#E2EAE7]">
-                        Level 2 · Strip Pack
-                      </span>
-                      <span className="text-[11px] font-mono text-[#007062]">
-                        <span className="font-bold">{pcs}</span> pcs
-                      </span>
-                    </div>
-                    <span className="text-xs font-medium text-[#607774] block">Blister Foil Strip</span>
-                    <div className="mt-2 flex items-baseline gap-1.5">
-                      <span className="text-base font-bold text-[#007062]">৳</span>
-                      <span className="text-2xl font-bold tracking-tight text-[#002F34] font-mono">
-                        {stripPrice}
-                      </span>
-                      <span className="text-[11px] text-[#7A9894] font-normal">/ strip</span>
-                    </div>
-                  </div>
-                  <div className="pt-3 mt-3 border-t border-[#EEF3F2] flex items-center justify-between text-[10px]">
-                    <span className="text-[#6A817E] font-mono">
-                      ৳{parseFloat(mrpPerPiece || '0').toFixed(2)} × {pcs} pcs
+                <div className="bg-white border border-[#97D8D0] rounded-xl p-4 shadow-sm">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#004D40] bg-[#E1F6F0] px-2 py-0.5 rounded-full">
+                    Full Box Rate ({pcs} pcs)
+                  </span>
+                  <div className="mt-2 flex items-baseline gap-1">
+                    <span className="text-base font-bold text-[#007062]">৳</span>
+                    <span className="text-2xl font-bold font-mono text-[#002F34]">
+                      {boxPrice}
                     </span>
-                    <span className="font-semibold text-[#007062]">Standard Strip</span>
+                    <span className="text-xs text-[#7A9894]">/ box</span>
                   </div>
-                </div>
-
-                {/* Level 3: Full Box */}
-                <div className="bg-white border border-[#97D8D0] ring-1 ring-[#97D8D0]/50 rounded-[18px] p-4 shadow-sm flex flex-col justify-between hover:border-[#00A887] transition-colors">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#004D40] bg-[#E1F6F0] px-2 py-0.5 rounded-full border border-[#BCE8DD]">
-                        Level 3 · Full Box
-                      </span>
-                      <span className="text-[11px] font-mono text-[#5F7D7A]">
-                        <span className="font-bold text-[#002F34]">{str}</span> strips
-                      </span>
-                    </div>
-                    <span className="text-xs font-semibold text-[#002F34] block">Master Trade Pack</span>
-                    <div className="mt-2 flex items-baseline gap-1.5">
-                      <span className="text-base font-bold text-[#007062]">৳</span>
-                      <span className="text-2xl font-bold tracking-tight text-[#002F34] font-mono">
-                        {boxPrice}
-                      </span>
-                      <span className="text-[11px] text-[#5F7D7A] font-normal">/ box</span>
-                    </div>
-                  </div>
-                  <div className="pt-3 mt-3 border-t border-[#EEF3F2] flex items-center justify-between text-[10px]">
-                    <span className="text-[#6A817E] font-mono font-medium">
-                      ৳{parseFloat(mrpPerPiece || '0').toFixed(2)} × {totalPiecesBox} pcs
-                    </span>
-                    <span className="text-[9px] uppercase font-bold text-[#005A53] bg-[#F4F8F7] px-1.5 py-0.5 rounded border border-[#DEE8E5]">
-                      Carton
-                    </span>
-                  </div>
+                  <span className="text-[11px] text-[#607774] mt-1 block">Receiving conversion rate</span>
                 </div>
               </div>
             </div>
@@ -587,22 +667,15 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 <label className="block text-xs font-bold text-[#002F34] mb-1.5" htmlFor="shelfLocation">
                   Physical Shelf / Dispensary Rack <span className="text-[#7A9894] font-normal">(Optional)</span>
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#7A9894]">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                  </div>
-                  <input
-                    id="shelfLocation"
-                    name="shelfLocation"
-                    type="text"
-                    placeholder="e.g. Rack A-12, Bin 04"
-                    value={shelfLocation}
-                    onChange={(e) => setShelfLocation(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#DCE6E2] rounded-2xl text-sm font-semibold text-[#002F34] placeholder:text-[#9FB7B2] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] transition-all"
-                  />
-                </div>
+                <input
+                  id="shelfLocation"
+                  name="shelfLocation"
+                  type="text"
+                  placeholder="e.g. Rack A-12, Bin 04"
+                  value={shelfLocation}
+                  onChange={(e) => setShelfLocation(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white border border-[#DCE6E2] rounded-2xl text-sm font-semibold text-[#002F34] placeholder:text-[#9FB7B2] focus:outline-none focus:ring-2 focus:ring-[#002F34]/20 focus:border-[#002F34] transition-all"
+                />
               </div>
 
               <div>
@@ -610,7 +683,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                   <label className="block text-xs font-bold text-[#002F34]" htmlFor="lowStockThresholdPieces">
                     Low Stock Alert Limit <span className="text-[#7A9894] font-normal">(Optional)</span>
                   </label>
-                  <span className="text-[10px] text-[#7A9894] font-medium">In total pieces</span>
+                  <span className="text-[10px] text-[#7A9894] font-medium">In pieces</span>
                 </div>
                 <div className="relative">
                   <input
@@ -628,25 +701,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                     pieces
                   </span>
                 </div>
-                <p className="text-[11px] text-[#7A9894] mt-1.5 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
-                  Triggers low inventory alert when stock falls to or below {lowStockThresholdPieces || 0} pieces.
-                </p>
               </div>
-            </div>
-          </div>
-
-          {/* Clean Catalog Decoupling Notice Banner */}
-          <div className="p-4 rounded-2xl bg-[#F0FAF7] border border-[#CEE8E2] flex items-start gap-3">
-            <div className="w-7 h-7 rounded-xl bg-[#E1F4F0] text-[#007062] flex items-center justify-center shrink-0 mt-0.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="text-xs text-[#1F544D] leading-relaxed">
-              <span className="font-bold text-[#002F34]">Clean Catalog Decoupling:</span> This form creates master
-              catalog identification and pricing formulas. Specific lot batches, expiry dates, supplier invoices, and
-              physical counts are safely added under <strong>Add Batch (Stock Entry)</strong> without modifying this blueprint.
             </div>
           </div>
         </form>
@@ -682,7 +737,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
             >
               {loading ? (
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                 </svg>
               ) : (

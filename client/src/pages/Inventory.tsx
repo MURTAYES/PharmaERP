@@ -760,7 +760,7 @@ export const Inventory: React.FC = () => {
                         <td className="py-3.5 px-3">
                           <div className="font-medium text-[#0D2F2B]">{item.genericName}</div>
                           <div className="text-[10px] text-[#7E9390]">
-                            {item.category || 'General'} • {item.manufacturer}
+                            {item.category || 'General'} • {item.brandName || item.manufacturer}
                           </div>
                         </td>
                         <td className="py-3.5 px-3 text-center">
@@ -784,13 +784,13 @@ export const Inventory: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-3.5 px-3 text-center text-slate-600">
-                          1 box = {item.unitHierarchy.stripsPerBox} strips ({item.unitHierarchy.piecesPerStrip * item.unitHierarchy.stripsPerBox} pcs)
+                          1 box = {item.unitHierarchy?.piecesPerBox || item.totalPiecesPerBox || 10} pcs
                         </td>
                         <td className="py-3.5 px-3 text-right font-bold text-[#0F2D29]">
-                          <div>৳ {parseFloat(item.mrpPerPiece).toFixed(2)}</div>
-                          {item.stripPrice && (
+                          <div>৳ {parseFloat(item.mrpPerPiece).toFixed(2)}/pc</div>
+                          {item.boxPrice && (
                             <div className="text-[10px] text-slate-400 font-normal">
-                              ৳ {item.stripPrice}/strip
+                              ৳ {item.boxPrice}/box
                             </div>
                           )}
                         </td>
@@ -874,6 +874,8 @@ export const Inventory: React.FC = () => {
                                           <span className="font-mono font-bold text-slate-900 block">{b.batchNumber}</span>
                                           <span className="text-[11px] text-slate-500">
                                             Expiry: {new Date(b.expiryDate).toLocaleDateString('en-GB')}
+                                            {b.brandName || b.supplierName ? ` · ${b.brandName || b.supplierName}` : ''}
+                                            {b.barcode ? ` · Barcode: ${b.barcode}` : ''}
                                           </span>
                                         </div>
                                         <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${

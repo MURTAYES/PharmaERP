@@ -27,6 +27,7 @@ export interface ISettings extends Document {
   charges: IGlobalCharge[];
   expiryAlertWindows: IExpiryAlertWindows;
   categories: string[];
+  brands: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -108,12 +109,30 @@ const settingsSchema = new Schema<ISettings>(
         'Tablet',
         'Capsule',
         'Syrup / Suspension',
+        'Pot (PT)',
         'Injection',
         'Ointment / Cream',
         'Eye / Ear Drops',
         'Inhaler',
         'Suppository',
         'Medical Device / Surgical',
+      ],
+    },
+    brands: {
+      type: [String],
+      default: [
+        'Square Pharmaceuticals',
+        'Beximco Pharma',
+        'Incepta Pharmaceuticals',
+        'Renata Limited',
+        'Opsonin Pharma',
+        'ACME Laboratories',
+        'Eskayef Pharmaceuticals',
+        'Aristopharma',
+        'ACI Limited',
+        'Healthcare Pharmaceuticals',
+        'Popular Pharmaceuticals',
+        'Radiant Pharmaceuticals',
       ],
     },
   },

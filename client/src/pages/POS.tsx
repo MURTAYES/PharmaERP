@@ -157,24 +157,23 @@ export const POS: React.FC = () => {
         const currentLine = updated[existingIdx];
         const newQty = currentLine.quantity + 1;
         const lineTotal = new Decimal(currentLine.unitPrice).times(newQty).toFixed(2);
-        let qtyPieces = newQty;
-        if (currentLine.unit === 'strip') qtyPieces = newQty * pcsPerStrip;
-        if (currentLine.unit === 'box') qtyPieces = newQty * pcsPerStrip * stripsPerBox;
 
         updated[existingIdx] = {
           ...currentLine,
           quantity: newQty,
-          quantityPieces: qtyPieces,
+          quantityPieces: newQty,
           lineTotal,
         };
         setLines(updated);
       } else {
+        const pcsInBox = item.unitHierarchy?.piecesPerBox || item.totalPiecesPerBox || 10;
         const newLine: CartLineItem = {
           id: Math.random().toString(36).substring(2, 9),
           itemId: item._id,
           tradeName: item.tradeName,
           genericName: item.genericName,
           unitHierarchy: {
+            piecesPerBox: pcsInBox,
             piecesPerStrip: pcsPerStrip,
             stripsPerBox: stripsPerBox,
           },
@@ -206,16 +205,11 @@ export const POS: React.FC = () => {
     setLines((prev) =>
       prev.map((l) => {
         if (l.id !== id) return l;
-        let qtyPieces = qty;
-        if (l.unit === 'strip') qtyPieces = qty * l.unitHierarchy.piecesPerStrip;
-        if (l.unit === 'box')
-          qtyPieces = qty * l.unitHierarchy.piecesPerStrip * l.unitHierarchy.stripsPerBox;
-
         const lineTotal = new Decimal(l.unitPrice).times(qty).toFixed(2);
         return {
           ...l,
           quantity: qty,
-          quantityPieces: qtyPieces,
+          quantityPieces: qty,
           lineTotal,
         };
       })
@@ -226,18 +220,14 @@ export const POS: React.FC = () => {
     setLines((prev) =>
       prev.map((l) => {
         if (l.id !== id) return l;
-        const pcsPerStrip = l.unitHierarchy.piecesPerStrip;
-        const stripsPerBox = l.unitHierarchy.stripsPerBox;
-        const totalPcsBox = pcsPerStrip * stripsPerBox;
+        const pcsInBox = l.unitHierarchy.piecesPerBox || 10;
         const mrpDec = new Decimal(l.mrpPerPiece);
 
         let newCatalogPrice = mrpDec.toFixed(2);
-        if (unit === 'strip') newCatalogPrice = mrpDec.times(pcsPerStrip).toFixed(2);
-        if (unit === 'box') newCatalogPrice = mrpDec.times(totalPcsBox).toFixed(2);
+        if (unit === 'box') newCatalogPrice = mrpDec.times(pcsInBox).toFixed(2);
 
         let qtyPieces = l.quantity;
-        if (unit === 'strip') qtyPieces = l.quantity * pcsPerStrip;
-        if (unit === 'box') qtyPieces = l.quantity * totalPcsBox;
+        if (unit === 'box') qtyPieces = l.quantity * pcsInBox;
 
         const newUnitPrice = l.isPriceOverridden ? l.unitPrice : newCatalogPrice;
         const lineTotal = new Decimal(newUnitPrice).times(l.quantity).toFixed(2);

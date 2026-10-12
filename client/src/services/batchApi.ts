@@ -5,10 +5,13 @@ export interface ReceiveBatchPayload {
   itemId: string;
   batchNumber: string;
   expiryDate: string;
-  unit: 'piece' | 'strip' | 'box';
+  unit: 'piece' | 'box' | 'strip';
   quantity: number;
   purchasePrice?: string | number;
   supplierName?: string;
+  brandName?: string;
+  barcode?: string;
+  qrCode?: string;
 }
 
 export interface ReceiveBatchResponse {

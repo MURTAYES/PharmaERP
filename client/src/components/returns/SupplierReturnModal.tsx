@@ -145,8 +145,8 @@ export const SupplierReturnModal: React.FC<SupplierReturnModalProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Supplier / Distributor Name"
-            placeholder="e.g. Beximco Pharma Regional Depot"
+            label="Brand / Distributor Name"
+            placeholder="e.g. Square Pharmaceuticals, Beximco Pharma"
             value={supplierName}
             onChange={(e) => setSupplierName(e.target.value)}
             required

@@ -95,7 +95,7 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({
             value={productQuery}
             onChange={(e) => setProductQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search brand, barcode (F2)..."
+            placeholder="Search brand, barcode, QR code (F2)..."
             className="w-full bg-[#F3F7F6] border-none text-xs rounded-full py-2.5 pl-9 pr-14 focus:ring-1 focus:ring-[#002F34] focus:bg-white text-[#002F34] placeholder-slate-400 font-medium transition-all"
           />
 
@@ -221,10 +221,10 @@ export const POSItemSearch: React.FC<POSItemSearchProps> = ({
                       )}
                     </div>
                     <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                      <span>{item.manufacturer}</span>
+                      <span>{item.brandName || item.manufacturer}</span>
                       <span>•</span>
                       <span>
-                        {pcsPerStrip} pcs/strip · {stripsPerBox} strips/box ({totalPcs} pcs total)
+                        1 Box = {item.unitHierarchy?.piecesPerBox || item.totalPiecesPerBox || totalPcs} pcs
                       </span>
                     </div>
                   </div>

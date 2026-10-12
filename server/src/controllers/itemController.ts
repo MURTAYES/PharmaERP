@@ -14,14 +14,19 @@ export const createItemSchema = z.object({
   itemCode: z.string().trim().optional(),
   category: z.string().min(1, 'Category is required').trim(),
   manufacturer: z.string().min(1, 'Manufacturer is required').trim(),
+  brandName: z.string().trim().optional().default(''),
+  barcodes: z.array(z.string().trim()).optional().default([]),
+  barcode: z.string().trim().optional(),
+  qrCode: z.string().trim().optional().default(''),
   shelfLocation: z.string().trim().optional().default(''),
   unitHierarchy: z
     .object({
       baseUnit: z.literal('piece').default('piece'),
-      piecesPerStrip: z.number().min(1).default(10),
-      stripsPerBox: z.number().min(1).default(10),
+      piecesPerBox: z.number().min(1).default(10),
+      piecesPerStrip: z.number().min(1).optional().default(10),
+      stripsPerBox: z.number().min(1).optional().default(1),
     })
-    .default({ baseUnit: 'piece', piecesPerStrip: 10, stripsPerBox: 10 }),
+    .default({ baseUnit: 'piece', piecesPerBox: 10, piecesPerStrip: 10, stripsPerBox: 1 }),
   mrpPerPiece: z.union([z.string(), z.number()]).refine(
     (val) => {
       try {
@@ -74,11 +79,20 @@ export async function getItems(req: Request, res: Response): Promise<void> {
 
     if (search && !productName && !genericName) {
       const searchRegex = new RegExp(search, 'i');
+      const batchesWithCode = await Batch.find({
+        $or: [{ barcode: search }, { qrCode: search }],
+      }).select('itemId').lean();
+      const bItemIds = batchesWithCode.map((b: any) => b.itemId);
+
       query.$or = [
         { tradeName: searchRegex },
         { genericName: searchRegex },
         { itemCode: searchRegex },
         { manufacturer: searchRegex },
+        { brandName: searchRegex },
+        { barcodes: search },
+        { qrCode: search },
+        ...(bItemIds.length > 0 ? [{ _id: { $in: bItemIds } }] : []),
       ];
     }
 
@@ -232,11 +246,30 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
 
     const searchQuery: Record<string, any> = { isActive: true };
 
+    const searchStr = (productName || q || '').trim();
+    let batchItemIds: any[] = [];
+    if (searchStr) {
+      const batchesWithCode = await Batch.find({
+        $or: [
+          { barcode: searchStr },
+          { qrCode: searchStr },
+        ],
+      }).select('itemId').lean();
+      batchItemIds = batchesWithCode.map((b: any) => b.itemId);
+    }
+
     if (productName && genericName) {
       searchQuery.tradeName = new RegExp(productName, 'i');
       searchQuery.genericName = new RegExp(genericName, 'i');
     } else if (productName) {
-      searchQuery.tradeName = new RegExp(productName, 'i');
+      const pRegex = new RegExp(productName, 'i');
+      searchQuery.$or = [
+        { tradeName: pRegex },
+        { brandName: pRegex },
+        { barcodes: productName },
+        { qrCode: productName },
+        ...(batchItemIds.length > 0 ? [{ _id: { $in: batchItemIds } }] : []),
+      ];
     } else if (genericName) {
       searchQuery.genericName = new RegExp(genericName, 'i');
     } else if (q) {
@@ -246,6 +279,10 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
         { genericName: anywhereRegex },
         { itemCode: anywhereRegex },
         { manufacturer: anywhereRegex },
+        { brandName: anywhereRegex },
+        { barcodes: q },
+        { qrCode: q },
+        ...(batchItemIds.length > 0 ? [{ _id: { $in: batchItemIds } }] : []),
       ];
     }
 
@@ -274,9 +311,8 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
       const itemBatches = batchMap.get(item._id.toString()) || [];
       const totalSellablePieces = itemBatches.reduce((sum, b) => sum + b.qtySellable, 0);
       const pieceMRP = new Decimal(item.mrpPerPiece.toString());
+      const pcsPerBox = item.unitHierarchy?.piecesPerBox || (item.unitHierarchy?.piecesPerStrip && item.unitHierarchy?.stripsPerBox ? item.unitHierarchy.piecesPerStrip * item.unitHierarchy.stripsPerBox : 1);
       const pcsPerStrip = item.unitHierarchy?.piecesPerStrip || 1;
-      const stripsPerBox = item.unitHierarchy?.stripsPerBox || 1;
-      const totalPcsBox = pcsPerStrip * stripsPerBox;
 
       return {
         _id: item._id,
@@ -285,12 +321,18 @@ export async function searchItems(req: Request, res: Response): Promise<void> {
         itemCode: item.itemCode,
         category: item.category,
         manufacturer: item.manufacturer,
+        brandName: item.brandName || '',
+        barcodes: item.barcodes || [],
+        qrCode: item.qrCode || '',
         shelfLocation: item.shelfLocation,
-        unitHierarchy: item.unitHierarchy,
+        unitHierarchy: {
+          ...item.unitHierarchy,
+          piecesPerBox: pcsPerBox,
+        },
         mrpPerPiece: pieceMRP.toFixed(2),
         stripPrice: pieceMRP.times(pcsPerStrip).toFixed(2),
-        boxPrice: pieceMRP.times(totalPcsBox).toFixed(2),
-        totalPiecesPerBox: totalPcsBox,
+        boxPrice: pieceMRP.times(pcsPerBox).toFixed(2),
+        totalPiecesPerBox: pcsPerBox,
         lowStockThresholdPieces: item.lowStockThresholdPieces,
         totalSellablePieces,
         isLowStock: totalSellablePieces >= 5 && totalSellablePieces <= item.lowStockThresholdPieces,
@@ -355,8 +397,16 @@ export async function createItem(req: AuthenticatedRequest, res: Response): Prom
       }
     }
 
+    const barcodesList = [...(validated.barcodes || [])];
+    if (validated.barcode?.trim() && !barcodesList.includes(validated.barcode.trim())) {
+      barcodesList.push(validated.barcode.trim());
+    }
+
     const item = new Item({
       ...validated,
+      brandName: validated.brandName || validated.manufacturer || '',
+      barcodes: barcodesList,
+      qrCode: validated.qrCode || '',
       itemCode,
       mrpPerPiece: mongoose.Types.Decimal128.fromString(new Decimal(validated.mrpPerPiece).toFixed(2)),
     });
@@ -410,6 +460,12 @@ export async function updateItem(req: AuthenticatedRequest, res: Response): Prom
     if (validated.genericName !== undefined) item.genericName = validated.genericName;
     if (validated.category !== undefined) item.category = validated.category;
     if (validated.manufacturer !== undefined) item.manufacturer = validated.manufacturer;
+    if (validated.brandName !== undefined) item.brandName = validated.brandName;
+    if (validated.barcodes !== undefined) item.barcodes = validated.barcodes;
+    if (validated.barcode && !item.barcodes.includes(validated.barcode.trim())) {
+      item.barcodes.push(validated.barcode.trim());
+    }
+    if (validated.qrCode !== undefined) item.qrCode = validated.qrCode;
     if (validated.shelfLocation !== undefined) item.shelfLocation = validated.shelfLocation;
     if (validated.unitHierarchy !== undefined) item.unitHierarchy = validated.unitHierarchy as any;
     if (validated.lowStockThresholdPieces !== undefined)

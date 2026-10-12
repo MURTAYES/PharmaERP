@@ -38,6 +38,7 @@ export interface PharmacySettings {
   charges: GlobalCharge[];
   expiryAlertWindows: ExpiryAlertWindows;
   categories: string[];
+  brands: string[];
 }
 
 export interface AuditLogItem {
@@ -54,8 +55,9 @@ export interface AuditLogItem {
 
 export interface UnitHierarchy {
   baseUnit: 'piece';
-  piecesPerStrip: number;
-  stripsPerBox: number;
+  piecesPerBox: number;
+  piecesPerStrip?: number;
+  stripsPerBox?: number;
 }
 
 export interface Item {
@@ -65,6 +67,9 @@ export interface Item {
   itemCode: string;
   category: string;
   manufacturer: string;
+  brandName?: string;
+  barcodes?: string[];
+  qrCode?: string;
   shelfLocation?: string;
   unitHierarchy: UnitHierarchy;
   mrpPerPiece: string;
@@ -94,6 +99,9 @@ export interface Batch {
   purchasePricePerPiece?: string;
   isCostMissing: boolean;
   supplierName?: string;
+  brandName?: string;
+  barcode?: string;
+  qrCode?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -7,9 +7,11 @@ import { connectDB } from './config/db.js';
 import { responseSerializer } from './middleware/serializer.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import apiRouter from './routes/index.js';
-import { seedInitialData } from './scripts/seed.js';
 
 export const app = express();
+
+// Trust reverse proxies (Vite proxy, tunnels, load balancers)
+app.set('trust proxy', 1);
 
 // Security Middleware
 app.use(
@@ -42,7 +44,6 @@ app.use(errorHandler);
 export async function startServer() {
   try {
     await connectDB();
-    await seedInitialData();
 
     const server = app.listen(config.port, () => {
       console.log(`[PharmaERP Server] Running on http://localhost:${config.port} (env: ${config.nodeEnv})`);

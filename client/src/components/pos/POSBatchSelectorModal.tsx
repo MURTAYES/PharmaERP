@@ -94,7 +94,8 @@ export const POSBatchSelectorModal: React.FC<POSBatchSelectorModalProps> = ({
                       </div>
                       <span className="text-xs text-[#5F7D7A] block mt-0.5">
                         Expires: <strong className="text-[#002F34] font-mono">{formattedExpiry}</strong>
-                        {batch.supplierName ? ` · ${batch.supplierName}` : ''}
+                        {batch.brandName || batch.supplierName ? ` · ${batch.brandName || batch.supplierName}` : ''}
+                        {batch.barcode ? ` · Barcode: ${batch.barcode}` : ''}
                       </span>
                     </div>
                   </div>

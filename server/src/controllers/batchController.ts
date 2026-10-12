@@ -13,10 +13,13 @@ export const receiveBatchSchema = z.object({
   itemId: z.string().min(1, 'Item ID is required'),
   batchNumber: z.string().min(1, 'Batch number is required').trim().toUpperCase(),
   expiryDate: z.string().min(1, 'Expiry date is required'),
-  unit: z.enum(['piece', 'strip', 'box']).default('piece'),
+  unit: z.enum(['piece', 'box', 'strip']).default('box'),
   quantity: z.number().int('Quantity must be a whole number (no fractions)').positive('Quantity must be greater than 0'),
   purchasePrice: z.union([z.string(), z.number()]).optional(),
   supplierName: z.string().trim().optional(),
+  brandName: z.string().trim().optional(),
+  barcode: z.string().trim().optional(),
+  qrCode: z.string().trim().optional(),
 });
 
 export const updateCostSchema = z.object({
@@ -61,17 +64,16 @@ export async function receiveBatch(req: AuthenticatedRequest, res: Response): Pr
     }
 
     // Convert receiving quantity into base pieces
+    const piecesPerBox = item.unitHierarchy?.piecesPerBox || (item.unitHierarchy?.piecesPerStrip && item.unitHierarchy?.stripsPerBox ? item.unitHierarchy.piecesPerStrip * item.unitHierarchy.stripsPerBox : 1);
     const pcsPerStrip = item.unitHierarchy?.piecesPerStrip || 1;
-    const stripsPerBox = item.unitHierarchy?.stripsPerBox || 1;
-    const totalPcsPerBox = pcsPerStrip * stripsPerBox;
 
     let totalPieces = 0;
     if (validated.unit === 'piece') {
       totalPieces = validated.quantity;
+    } else if (validated.unit === 'box') {
+      totalPieces = validated.quantity * piecesPerBox;
     } else if (validated.unit === 'strip') {
       totalPieces = validated.quantity * pcsPerStrip;
-    } else if (validated.unit === 'box') {
-      totalPieces = validated.quantity * totalPcsPerBox;
     }
 
     // Cost calculation (Owner only, or cost-missing if omitted/pharmacist)
@@ -83,15 +85,17 @@ export async function receiveBatch(req: AuthenticatedRequest, res: Response): Pr
       const enteredPrice = new Decimal(validated.purchasePrice);
       let costPerPiece = enteredPrice;
 
-      if (validated.unit === 'strip') {
+      if (validated.unit === 'box') {
+        costPerPiece = enteredPrice.dividedBy(piecesPerBox);
+      } else if (validated.unit === 'strip') {
         costPerPiece = enteredPrice.dividedBy(pcsPerStrip);
-      } else if (validated.unit === 'box') {
-        costPerPiece = enteredPrice.dividedBy(totalPcsPerBox);
       }
 
       purchasePricePerPiece = mongoose.Types.Decimal128.fromString(costPerPiece.toFixed(4));
       isCostMissing = false;
     }
+
+    const effectiveBrand = (validated.brandName || validated.supplierName || item.brandName || '').trim();
 
     // Deduplication & Merging: Check for existing batch matching itemId, batchNumber, expiryDate
     let batch = await Batch.findOne({
@@ -105,8 +109,15 @@ export async function receiveBatch(req: AuthenticatedRequest, res: Response): Pr
     if (batch) {
       // Merge into existing batch
       batch.qtySellable += totalPieces;
-      if (validated.supplierName) {
-        batch.supplierName = validated.supplierName;
+      if (effectiveBrand) {
+        batch.brandName = effectiveBrand;
+        batch.supplierName = effectiveBrand;
+      }
+      if (validated.barcode) {
+        batch.barcode = validated.barcode.trim();
+      }
+      if (validated.qrCode) {
+        batch.qrCode = validated.qrCode.trim();
       }
       if (!isCostMissing && purchasePricePerPiece) {
         batch.purchasePricePerPiece = purchasePricePerPiece;
@@ -125,9 +136,24 @@ export async function receiveBatch(req: AuthenticatedRequest, res: Response): Pr
         qtyExpired: 0,
         purchasePricePerPiece,
         isCostMissing,
-        supplierName: validated.supplierName || '',
+        supplierName: effectiveBrand,
+        brandName: effectiveBrand,
+        barcode: validated.barcode?.trim() || '',
+        qrCode: validated.qrCode?.trim() || '',
       });
       await batch.save();
+    }
+
+    // Auto-link barcode / QR code to Item so multiple barcodes per item work seamlessly
+    if (validated.barcode?.trim()) {
+      await Item.findByIdAndUpdate(item._id, {
+        $addToSet: { barcodes: validated.barcode.trim() },
+      });
+    }
+    if (validated.qrCode?.trim() && !item.qrCode) {
+      await Item.findByIdAndUpdate(item._id, {
+        $set: { qrCode: validated.qrCode.trim() },
+      });
     }
 
     // Record immutable StockMovement ledger entry
@@ -216,17 +242,16 @@ export async function updateBatchCost(req: AuthenticatedRequest, res: Response):
     }
 
     const item = batch.itemId as any;
+    const piecesPerBox = item?.unitHierarchy?.piecesPerBox || (item?.unitHierarchy?.piecesPerStrip && item?.unitHierarchy?.stripsPerBox ? item.unitHierarchy.piecesPerStrip * item.unitHierarchy.stripsPerBox : 1);
     const pcsPerStrip = item?.unitHierarchy?.piecesPerStrip || 1;
-    const stripsPerBox = item?.unitHierarchy?.stripsPerBox || 1;
-    const totalPcsPerBox = pcsPerStrip * stripsPerBox;
 
     const enteredPrice = new Decimal(validated.purchasePrice);
     let costPerPiece = enteredPrice;
 
-    if (validated.unit === 'strip') {
+    if (validated.unit === 'box') {
+      costPerPiece = enteredPrice.dividedBy(piecesPerBox);
+    } else if (validated.unit === 'strip') {
       costPerPiece = enteredPrice.dividedBy(pcsPerStrip);
-    } else if (validated.unit === 'box') {
-      costPerPiece = enteredPrice.dividedBy(totalPcsPerBox);
     }
 
     const previousCost = batch.purchasePricePerPiece?.toString();

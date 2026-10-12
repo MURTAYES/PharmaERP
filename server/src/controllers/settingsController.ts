@@ -33,6 +33,7 @@ export const updateSettingsSchema = z.object({
     })
     .optional(),
   categories: z.array(z.string().min(1)).optional(),
+  brands: z.array(z.string().min(1)).optional(),
 });
 
 export const settingsController = {

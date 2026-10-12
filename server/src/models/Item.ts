@@ -3,8 +3,9 @@ import Decimal from 'decimal.js';
 
 export interface IUnitHierarchy {
   baseUnit: 'piece';
-  piecesPerStrip: number;
-  stripsPerBox: number;
+  piecesPerBox?: number;
+  piecesPerStrip?: number;
+  stripsPerBox?: number;
 }
 
 export interface IItem extends Document {
@@ -13,6 +14,9 @@ export interface IItem extends Document {
   itemCode: string;
   category: string;
   manufacturer: string;
+  brandName?: string;
+  barcodes: string[];
+  qrCode?: string;
   shelfLocation: string;
   unitHierarchy: IUnitHierarchy;
   mrpPerPiece: Types.Decimal128;
@@ -25,8 +29,9 @@ export interface IItem extends Document {
 const unitHierarchySchema = new Schema<IUnitHierarchy>(
   {
     baseUnit: { type: String, default: 'piece', enum: ['piece'] },
+    piecesPerBox: { type: Number, default: 10, min: 1 },
     piecesPerStrip: { type: Number, default: 10, min: 1 },
-    stripsPerBox: { type: Number, default: 10, min: 1 },
+    stripsPerBox: { type: Number, default: 1, min: 1 },
   },
   { _id: false }
 );
@@ -64,6 +69,23 @@ const itemSchema = new Schema<IItem>(
       trim: true,
       index: true,
     },
+    brandName: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
+    },
+    barcodes: {
+      type: [String],
+      default: [],
+      index: true,
+    },
+    qrCode: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
+    },
     shelfLocation: {
       type: String,
       default: '',
@@ -71,7 +93,7 @@ const itemSchema = new Schema<IItem>(
     },
     unitHierarchy: {
       type: unitHierarchySchema,
-      default: () => ({ baseUnit: 'piece', piecesPerStrip: 10, stripsPerBox: 10 }),
+      default: () => ({ baseUnit: 'piece', piecesPerBox: 10, piecesPerStrip: 10, stripsPerBox: 1 }),
     },
     mrpPerPiece: {
       type: Schema.Types.Decimal128,
@@ -97,13 +119,16 @@ const itemSchema = new Schema<IItem>(
           const pieceMRP = new Decimal(ret.mrpPerPiece.toString());
           ret.mrpPerPiece = pieceMRP.toFixed(2);
           
+          const pcsPerBox = ret.unitHierarchy?.piecesPerBox || (ret.unitHierarchy?.piecesPerStrip && ret.unitHierarchy?.stripsPerBox ? ret.unitHierarchy.piecesPerStrip * ret.unitHierarchy.stripsPerBox : 1);
           const pcsPerStrip = ret.unitHierarchy?.piecesPerStrip || 1;
-          const stripsPerBox = ret.unitHierarchy?.stripsPerBox || 1;
-          const totalPcsBox = pcsPerStrip * stripsPerBox;
           
+          ret.unitHierarchy = {
+            ...ret.unitHierarchy,
+            piecesPerBox: pcsPerBox,
+          };
           ret.stripPrice = pieceMRP.times(pcsPerStrip).toFixed(2);
-          ret.boxPrice = pieceMRP.times(totalPcsBox).toFixed(2);
-          ret.totalPiecesPerBox = totalPcsBox;
+          ret.boxPrice = pieceMRP.times(pcsPerBox).toFixed(2);
+          ret.totalPiecesPerBox = pcsPerBox;
         }
         return ret;
       },
@@ -112,7 +137,7 @@ const itemSchema = new Schema<IItem>(
 );
 
 // High performance compound text & prefix search indexes
-itemSchema.index({ tradeName: 'text', genericName: 'text', itemCode: 'text', manufacturer: 'text' });
+itemSchema.index({ tradeName: 'text', genericName: 'text', itemCode: 'text', manufacturer: 'text', brandName: 'text' });
 itemSchema.index({ tradeName: 1, genericName: 1 });
 itemSchema.index({ isActive: 1, tradeName: 1 });
 

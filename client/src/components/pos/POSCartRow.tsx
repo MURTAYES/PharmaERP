@@ -10,8 +10,9 @@ export interface CartLineItem {
   tradeName: string;
   genericName: string;
   unitHierarchy: {
-    piecesPerStrip: number;
-    stripsPerBox: number;
+    piecesPerBox?: number;
+    piecesPerStrip?: number;
+    stripsPerBox?: number;
   };
   mrpPerPiece: string;
   batchId: string;
@@ -44,7 +45,6 @@ export const POSCartRow: React.FC<POSCartRowProps> = ({
   index,
   line,
   onUpdateQuantity,
-  onUpdateUnit,
   onUpdateBatch,
   onUpdatePrice,
   onRemoveLine,
@@ -70,7 +70,8 @@ export const POSCartRow: React.FC<POSCartRowProps> = ({
             {line.genericName}
           </div>
           <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-            MRP: ৳{parseFloat(line.mrpPerPiece).toFixed(2)}/pc • {line.unitHierarchy.piecesPerStrip} pcs/strip • {line.unitHierarchy.stripsPerBox} strips/box
+            MRP: ৳{parseFloat(line.mrpPerPiece).toFixed(2)}/pc
+            {line.unitHierarchy?.piecesPerBox ? ` • ${line.unitHierarchy.piecesPerBox} pcs/box` : ''}
           </div>
         </td>
 
@@ -104,24 +105,11 @@ export const POSCartRow: React.FC<POSCartRowProps> = ({
           </button>
         </td>
 
-        {/* Unit Switcher (Pill Style) */}
+        {/* Sales Unit (All POS counter sales are in Piece) */}
         <td className="py-3 px-3">
-          <div className="inline-flex rounded-full bg-[#F3F7F6] p-0.5 border border-slate-200/60">
-            {(['piece', 'strip', 'box'] as const).map((u) => (
-              <button
-                key={u}
-                type="button"
-                onClick={() => onUpdateUnit(line.id, u)}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-all capitalize cursor-pointer ${
-                  line.unit === u
-                    ? 'bg-[#002F34] text-white shadow-xs'
-                    : 'text-slate-500 hover:text-[#002F34]'
-                }`}
-              >
-                {u}
-              </button>
-            ))}
-          </div>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-full bg-[#E7F6F3] text-[#006059] border border-[#C5E8E0]">
+            Piece (pc)
+          </span>
         </td>
 
         {/* Quantity Controls */}
@@ -158,9 +146,6 @@ export const POSCartRow: React.FC<POSCartRowProps> = ({
               +
             </button>
           </div>
-          <span className="block text-[10px] text-slate-400 text-center font-mono mt-0.5">
-            = {line.quantityPieces} pcs
-          </span>
         </td>
 
         {/* Unit Price & Override Button */}
