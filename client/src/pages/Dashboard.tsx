@@ -9,13 +9,13 @@ import { getHeldBills, getInvoices } from '../services/posApi.ts';
 export function Dashboard() {
   const { role } = useAuth();
   const isOwner = role === 'owner';
-  const [dateFilter, setDateFilter] = useState('Today');
+  const [dateFilter, setDateFilter] = useState<'today' | 'last_7_days' | 'this_month'>('today');
 
-  // Owner KPIs Query
-  const { data: kpiData, isLoading: loadingKPIs } = useQuery({
-    queryKey: ['dashboardKPIs'],
-    queryFn: () => reportApi.getDashboardKPIs(),
-    refetchInterval: 15000,
+  // Owner KPIs Query with Period Filter & Auto-Cache
+  const { data: kpiData, isLoading: loadingKPIs, refetch: refetchKPIs, isFetching: isFetchingKPIs } = useQuery({
+    queryKey: ['dashboardKPIs', dateFilter],
+    queryFn: () => reportApi.getDashboardKPIs(dateFilter),
+    refetchInterval: 25000,
   });
 
   // Pharmacist Operational Alerts Queries
@@ -60,6 +60,11 @@ export function Dashboard() {
   };
 
   const topMedicines = kpiData?.topMedicines || [];
+  const companySales = kpiData?.companySales || [];
+  const genericSales = kpiData?.genericSales || [];
+  const weeklySales = kpiData?.weeklySales || [];
+  const fromCache = kpiData?.fromCache;
+  const calculatedAt = kpiData?.calculatedAt;
   const criticalBatches = expiringData?.batches || [];
   const lowStockItems = lowStockData?.items || [];
   const heldBills = heldBillsData?.heldBills || [];
@@ -402,20 +407,45 @@ export function Dashboard() {
           <p className="text-xs text-slate-500 mt-0.5">Welcome back, monitor your real-time pharmacy operations and revenue.</p>
         </div>
 
-        {/* Filter Dropdown Button */}
+        {/* Filter Dropdown & Cache Refresh Controls */}
         <div className="flex items-center space-x-3">
+          {/* Cache Status Badge */}
+          {fromCache ? (
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-[#E7F6F3] text-[#006059] border border-[#C5E8E0]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00A887]" />
+              Cached ({calculatedAt ? new Date(calculatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'recent'})
+            </span>
+          ) : (
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Analytics
+            </span>
+          )}
+
+          <button
+            onClick={() => refetchKPIs()}
+            disabled={isFetchingKPIs}
+            title="Recalculate & refresh analytics cache"
+            className="p-2 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:text-[#002F34] hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+          >
+            <svg className={`w-3.5 h-3.5 ${isFetchingKPIs ? 'animate-spin text-[#002F34]' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+
+          {/* Period Filter Dropdown */}
           <div className="bg-white border border-slate-200/80 px-4 py-2 rounded-full text-xs font-semibold flex items-center space-x-2 text-slate-700 shadow-sm">
             <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
             </svg>
             <select
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
+              onChange={(e) => setDateFilter(e.target.value as any)}
               className="bg-transparent border-none p-0 text-xs font-semibold text-slate-700 focus:ring-0 cursor-pointer"
             >
-              <option value="Today">Today (Live)</option>
-              <option value="Last 7 days">Last 7 days</option>
-              <option value="This Month">This Month</option>
+              <option value="today">Today (Live)</option>
+              <option value="last_7_days">Last 7 days</option>
+              <option value="this_month">This Month</option>
             </select>
           </div>
         </div>
@@ -428,13 +458,9 @@ export function Dashboard() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-slate-400">Total Net Sales</span>
-              <button className="text-slate-400 hover:text-slate-600">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="1.5" />
-                  <circle cx="19" cy="12" r="1.5" />
-                  <circle cx="5" cy="12" r="1.5" />
-                </svg>
-              </button>
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50 px-2.5 py-0.5 rounded-full border border-slate-100">
+                {dateFilter === 'today' ? 'Today' : dateFilter === 'last_7_days' ? 'Last 7 Days' : 'This Month'}
+              </span>
             </div>
             <div className="flex items-baseline space-x-3 mb-1">
               <span className="text-3xl font-extrabold text-[#002F34] tracking-tight">
@@ -442,18 +468,18 @@ export function Dashboard() {
               </span>
             </div>
             <p className="text-[12px] text-slate-400 mb-6">
-              Pharmacy billing active with <span className="font-semibold text-emerald-600">৳ {today.averageTicketSize}</span> average ticket size!
+              Pharmacy billing throughput with <span className="font-semibold text-emerald-600">৳ {today.averageTicketSize}</span> average ticket size!
             </p>
           </div>
 
           {/* Nested Colored KPI Pills Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* In-Store (Cash) Sales (Soft Pink) */}
+            {/* In-Store (Cash) Sales */}
             <div className="bg-[#F1B5B9]/25 border border-[#F1B5B9]/40 rounded-2xl p-4 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-semibold text-slate-600">Cash Counter</span>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/80 text-emerald-600 flex items-center">
-                  Live
+                  Cash
                 </span>
               </div>
               <span className="text-lg font-bold text-[#002F34] mt-2">
@@ -461,7 +487,7 @@ export function Dashboard() {
               </span>
             </div>
 
-            {/* MFS (bKash/Nagad) Sales (Soft Mint) */}
+            {/* MFS (bKash/Nagad) Sales */}
             <div className="bg-[#97D8D0]/30 border border-[#97D8D0]/50 rounded-2xl p-4 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-semibold text-slate-600">MFS (bKash/Nagad)</span>
@@ -474,7 +500,7 @@ export function Dashboard() {
               </span>
             </div>
 
-            {/* Total Invoices Billed (Soft Lime) */}
+            {/* Invoices Billed */}
             <div className="bg-[#D7F1B5]/40 border border-[#D7F1B5]/60 rounded-2xl p-4 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-semibold text-slate-600">Invoices Billed</span>
@@ -489,191 +515,296 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Total Order Card with Wave Graphic */}
-        <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-slate-400">Total Order</span>
-              <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path clipRule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" fillRule="evenodd" />
+        {/* Weekly Sales Performance Line Graph (Saturday to Friday Cycle, 1 column) */}
+        {(() => {
+          const defaultWeek = [
+            { day: 'Sat', salesNum: 0, sales: '0.00', count: 0, isToday: false, isPeak: false },
+            { day: 'Sun', salesNum: 0, sales: '0.00', count: 0, isToday: false, isPeak: false },
+            { day: 'Mon', salesNum: 0, sales: '0.00', count: 0, isToday: false, isPeak: false },
+            { day: 'Tue', salesNum: 0, sales: '0.00', count: 0, isToday: false, isPeak: false },
+            { day: 'Wed', salesNum: 0, sales: '0.00', count: 0, isToday: false, isPeak: false },
+            { day: 'Thu', salesNum: 0, sales: '0.00', count: 0, isToday: false, isPeak: false },
+            { day: 'Fri', salesNum: 0, sales: '0.00', count: 0, isToday: false, isPeak: false },
+          ];
+          const daysData = weeklySales.length === 7 ? weeklySales : defaultWeek;
+          const maxVal = Math.max(...daysData.map((d: any) => d.salesNum || 0), 10);
+          const totalWeekSales = daysData.reduce((acc: number, d: any) => acc + (d.salesNum || 0), 0);
+          const peakItem = daysData.find((d: any) => d.isPeak);
+
+          // SVG Viewport: 260 width, 95 height
+          const coords = daysData.map((d: any, idx: number) => {
+            const x = 20 + idx * (220 / 6);
+            const y = 82 - ((d.salesNum || 0) / maxVal) * 58;
+            return { x, y, ...d };
+          });
+          const linePath = coords.reduce((acc: string, pt: any, idx: number) => {
+            return idx === 0 ? `M ${pt.x},${pt.y}` : `${acc} L ${pt.x},${pt.y}`;
+          }, '');
+          const areaPath = coords.length > 0
+            ? `${linePath} L ${coords[coords.length - 1].x},90 L ${coords[0].x},90 Z`
+            : '';
+
+          return (
+            <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-[#002F34] uppercase tracking-wide">
+                    Weekly Sales Trend
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E7F6F3] text-[#006059]">
+                    Sat – Fri Cycle
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between mt-1">
+                  <span className="text-2xl font-extrabold text-[#002F34]">
+                    ৳ {totalWeekSales.toFixed(0)}
+                  </span>
+                  {peakItem && (
+                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                      Peak: {peakItem.day} (৳ {parseFloat(peakItem.sales).toFixed(0)})
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Calculated daily from Saturday, auto-purged on weekend
+                </p>
+              </div>
+
+              {/* Smooth Line Graph SVG */}
+              <div className="mt-3 relative">
+                <svg className="w-full h-28 overflow-visible" viewBox="0 0 260 105">
+                  <defs>
+                    <linearGradient id="weekAreaGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#00A887" stopOpacity="0.32" />
+                      <stop offset="100%" stopColor="#00A887" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Horizontal Guideline */}
+                  <line x1="15" y1="82" x2="245" y2="82" stroke="#F1F5F4" strokeWidth="1" strokeDasharray="3 3" />
+                  <line x1="15" y1="24" x2="245" y2="24" stroke="#F1F5F4" strokeWidth="1" strokeDasharray="3 3" />
+
+                  {/* Area fill */}
+                  {areaPath && <path d={areaPath} fill="url(#weekAreaGradient)" />}
+
+                  {/* Line stroke */}
+                  {linePath && (
+                    <path
+                      d={linePath}
+                      fill="none"
+                      stroke="#006059"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+
+                  {/* Data Points and Day Labels */}
+                  {coords.map((pt: any, idx: number) => (
+                    <g key={idx} className="cursor-pointer group">
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={pt.isToday ? 4.5 : pt.isPeak ? 4 : 3}
+                        fill={pt.isPeak ? '#F59E0B' : pt.isToday ? '#002F34' : '#00A887'}
+                        stroke="#fff"
+                        strokeWidth="2"
+                        className="transition-transform group-hover:scale-150"
+                      />
+                      {pt.isToday && (
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r="7.5"
+                          fill="none"
+                          stroke="#002F34"
+                          strokeWidth="1.2"
+                          strokeDasharray="2 2"
+                        />
+                      )}
+                      {/* Day Label underneath */}
+                      <text
+                        x={pt.x}
+                        y="100"
+                        textAnchor="middle"
+                        fontSize="9.5"
+                        fontWeight={pt.isToday ? 'bold' : 'normal'}
+                        fill={pt.isToday ? '#002F34' : '#94A3B8'}
+                      >
+                        {pt.day}
+                      </text>
+                    </g>
+                  ))}
                 </svg>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl font-extrabold text-[#002F34]">{today.invoiceCount} Invoices</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
-                ↗ Active
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1">Real-time pharmacy transaction throughput</p>
-          </div>
-
-          {/* SVG Pink Wave Chart with Gradient */}
-          <div className="mt-4 relative">
-            <svg className="w-full h-24 overflow-visible" fill="none" viewBox="0 0 260 90">
-              <defs>
-                <linearGradient id="orderGradient" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#F1B5B9" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-              <path d="M 0,65 C 40,75 70,40 100,55 C 130,70 160,20 190,45 C 220,70 240,15 260,25 L 260,90 L 0,90 Z" fill="url(#orderGradient)" />
-              <path d="M 0,65 C 40,75 70,40 100,55 C 130,70 160,20 190,45 C 220,70 240,15 260,25" stroke="#F1B5B9" strokeLinecap="round" strokeWidth="2.5" />
-              <circle cx="190" cy="45" fill="#F1B5B9" r="3.5" stroke="#fff" strokeWidth="1.5" />
-            </svg>
-          </div>
-        </div>
+          );
+        })()}
       </div>
 
       {/* Mid Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue By Category (Donut Chart) */}
-        <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-[#002F34]">Revenue By Category</h2>
-            <button className="text-slate-400 hover:text-slate-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="1.5" />
-                <circle cx="19" cy="12" r="1.5" />
-                <circle cx="5" cy="12" r="1.5" />
-              </svg>
-            </button>
-          </div>
+        {/* Top Company / Manufacturer Sales (Donut & Breakdown, 1 column) */}
+        {(() => {
+          const colors = ['#002F34', '#00A887', '#97D8D0', '#F1B5B9', '#D7F1B5', '#B5BFF1'];
+          const topCompany = companySales[0];
 
-          {/* Donut graphic container with callouts */}
-          <div className="relative flex items-center justify-center my-3">
-            <svg className="w-48 h-48 -rotate-90" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" fill="transparent" r="46" stroke="#f1f5f9" strokeWidth="13" />
-              {/* Mint Segment: 45% */}
-              <circle cx="60" cy="60" fill="transparent" r="46" stroke="#97D8D0" strokeDasharray="130 289" strokeDashoffset="0" strokeLinecap="round" strokeWidth="13" />
-              {/* Coral Pink Segment: 35% */}
-              <circle cx="60" cy="60" fill="transparent" r="46" stroke="#F1B5B9" strokeDasharray="98 289" strokeDashoffset="-135" strokeLinecap="round" strokeWidth="13" />
-              {/* Lime Segment: 20% */}
-              <circle cx="60" cy="60" fill="transparent" r="46" stroke="#D7F1B5" strokeDasharray="52 289" strokeDashoffset="-238" strokeLinecap="round" strokeWidth="13" />
-            </svg>
+          // Calculate SVG Donut stroke offsets
+          let cumulativeOffset = 0;
+          const circumference = 2 * Math.PI * 46; // ~289.02
 
-            {/* Donut Inner Stats */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Revenue</span>
-              <span className="text-xl font-extrabold text-[#002F34]">৳ {parseFloat(today.netSales).toFixed(0)}</span>
+          return (
+            <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h2 className="text-sm font-bold text-[#002F34]">Top Manufacturer Sales</h2>
+                  <p className="text-[11px] text-slate-400">Which company product has best sales</p>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  {companySales.length} Brands
+                </span>
+              </div>
+
+              {companySales.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-400">
+                  No manufacturer sales recorded for this period yet.
+                </div>
+              ) : (
+                <>
+                  {/* Donut Chart Graphic */}
+                  <div className="relative flex items-center justify-center my-2">
+                    <svg className="w-44 h-44 -rotate-90" viewBox="0 0 120 120">
+                      {/* Background Track */}
+                      <circle cx="60" cy="60" fill="transparent" r="46" stroke="#f1f5f9" strokeWidth="12" />
+
+                      {/* Segments */}
+                      {companySales.map((c: any, idx: number) => {
+                        const pct = Math.max(0, Math.min(100, c.percentage || 0));
+                        const dashLength = (pct / 100) * circumference;
+                        const dashArray = `${dashLength} ${circumference}`;
+                        const currentOffset = -cumulativeOffset;
+                        cumulativeOffset += dashLength;
+
+                        return (
+                          <circle
+                            key={c.company}
+                            cx="60"
+                            cy="60"
+                            fill="transparent"
+                            r="46"
+                            stroke={colors[idx % colors.length]}
+                            strokeDasharray={dashArray}
+                            strokeDashoffset={currentOffset}
+                            strokeLinecap="round"
+                            strokeWidth="12"
+                            className="transition-all duration-500"
+                          />
+                        );
+                      })}
+                    </svg>
+
+                    {/* Donut Inner Text */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Top Brand</span>
+                      <span className="text-sm font-black text-[#002F34] line-clamp-1 max-w-[110px]" title={topCompany?.company}>
+                        {topCompany?.company || 'None'}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-emerald-600">
+                        {topCompany?.percentage || 0}% share
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Company Legend & Sales List */}
+                  <div className="space-y-1.5 pt-3 border-t border-slate-100 max-h-40 overflow-y-auto">
+                    {companySales.map((c: any, idx: number) => (
+                      <div key={c.company} className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center space-x-1.5 truncate max-w-[150px]">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: colors[idx % colors.length] }}
+                          />
+                          <span className="font-semibold text-slate-700 truncate" title={c.company}>
+                            {c.company}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2 shrink-0">
+                          <span className="text-[10px] text-slate-400 font-medium">{c.pieces} pcs</span>
+                          <span className="font-bold text-[#002F34]">৳ {parseFloat(c.revenue).toFixed(0)}</span>
+                          <span className="font-bold text-slate-400 w-7 text-right">({c.percentage}%)</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
+          );
+        })()}
 
-            {/* Floating Badges */}
-            <span className="absolute top-4 right-1 text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded-full border border-slate-100 shadow-sm flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#97D8D0]" /> 45%
-            </span>
-            <span className="absolute bottom-6 right-2 text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded-full border border-slate-100 shadow-sm flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F1B5B9]" /> 35%
-            </span>
-            <span className="absolute top-1/2 left-0 -translate-y-1/2 text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded-full border border-slate-100 shadow-sm flex items-center gap-1">
-              20% <span className="w-1.5 h-1.5 rounded-full bg-[#D7F1B5]" />
-            </span>
-          </div>
+        {/* Generic-Wise Sales Performance (Wide Bar Graph, spans 2 columns) */}
+        {(() => {
+          const maxGenericRevenue = Math.max(...genericSales.map((g: any) => g.rawRevenue || 0), 10);
 
-          {/* Legend */}
-          <div className="flex items-center justify-center space-x-4 pt-3 border-t border-slate-100 text-[11px] font-medium text-slate-500">
-            <span className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#97D8D0]" />
-              <span>Tablets</span>
-            </span>
-            <span className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#F1B5B9]" />
-              <span>Syrups</span>
-            </span>
-            <span className="flex items-center space-x-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#D7F1B5]" />
-              <span>Injections</span>
-            </span>
-          </div>
-        </div>
+          return (
+            <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-sm font-bold text-[#002F34]">Generic-Wise Sales Performance</h2>
+                  <p className="text-[11px] text-slate-400">
+                    Which generic medicines sell more by throughput and counter revenue
+                  </p>
+                </div>
+                <span className="bg-[#F3F7F6] border border-slate-200/60 px-3 py-1 rounded-full text-xs font-semibold text-slate-600">
+                  Top Generics
+                </span>
+              </div>
 
-        {/* Weekly Sales Performance (Striped Capsule Pill Bar Chart) */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-card border border-slate-100 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-bold text-[#002F34]">Weekly Sales Performance</h2>
-              <p className="text-[11px] text-slate-400">Total volume grouped by daily pharmacy fulfillment</p>
+              {genericSales.length === 0 ? (
+                <div className="py-16 text-center text-xs text-slate-400">
+                  No generic transactions recorded for this selected timeframe.
+                </div>
+              ) : (
+                <div className="space-y-3.5 pt-1">
+                  {genericSales.map((gen: any, idx: number) => {
+                    const ratio = Math.max(8, Math.min(100, Math.round((gen.rawRevenue / maxGenericRevenue) * 100)));
+                    return (
+                      <div key={gen.genericName} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-[#002F34]/5 text-[#002F34] font-bold text-[10px] flex items-center justify-center shrink-0">
+                              #{idx + 1}
+                            </span>
+                            <span className="font-bold text-[#002F34]">{gen.genericName}</span>
+                            <span className="text-[10px] text-slate-400 font-medium bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
+                              {gen.pieces} pcs sold
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-[#002F34]">
+                              ৳ {parseFloat(gen.revenue).toFixed(2)}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400 w-8 text-right">
+                              {ratio}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Animated Horizontal Progress Bar */}
+                        <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#002F34] to-[#00A887]"
+                            style={{ width: `${ratio}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            <span className="bg-[#F3F7F6] border border-slate-200/60 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1 text-slate-600">
-              <span>This Week</span>
-            </span>
-          </div>
-
-          {/* Capsule Chart Graphic with Axis */}
-          <div className="flex items-end space-x-4 h-56 pt-4">
-            {/* Y Axis Labels */}
-            <div className="flex flex-col justify-between h-44 text-[10px] font-semibold text-slate-400 pb-6 pr-2">
-              <span>50K</span>
-              <span>40K</span>
-              <span>30K</span>
-              <span>20K</span>
-              <span>10K</span>
-            </div>
-
-            {/* Bars Container (Sat to Fri) */}
-            <div className="flex-1 grid grid-cols-7 gap-3 items-end h-44 pb-6 border-b border-slate-100">
-              {/* Saturday (Peach Striped) */}
-              <div className="flex flex-col items-center h-full justify-end group">
-                <div className="w-full max-w-[34px] h-[75%] rounded-full pattern-stripes-peach border border-amber-300 relative transition-transform group-hover:scale-105">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-amber-400 absolute -top-1.5 left-1/2 -translate-x-1/2" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-500 mt-2">Sat</span>
-              </div>
-
-              {/* Sunday (Pink Striped) */}
-              <div className="flex flex-col items-center h-full justify-end group">
-                <div className="w-full max-w-[34px] h-[45%] rounded-full pattern-stripes-pink border border-pink-300 relative transition-transform group-hover:scale-105">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-pink-400 absolute -top-1.5 left-1/2 -translate-x-1/2" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-500 mt-2">Sun</span>
-              </div>
-
-              {/* Monday (Lime Striped) */}
-              <div className="flex flex-col items-center h-full justify-end group">
-                <div className="w-full max-w-[34px] h-[60%] rounded-full pattern-stripes-lime border border-lime-300 relative transition-transform group-hover:scale-105">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-lime-500 absolute -top-1.5 left-1/2 -translate-x-1/2" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-500 mt-2">Mon</span>
-              </div>
-
-              {/* Tuesday (Mint Striped - Peak) */}
-              <div className="flex flex-col items-center h-full justify-end group relative">
-                <div className="absolute -top-7 px-2 py-0.5 rounded-md bg-[#002F34] text-white text-[10px] font-semibold tracking-tight shadow">
-                  Peak
-                </div>
-                <div className="w-full max-w-[34px] h-[95%] rounded-full pattern-stripes-mint border border-teal-300 relative transition-transform group-hover:scale-105">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-teal-500 absolute -top-1.5 left-1/2 -translate-x-1/2" />
-                </div>
-                <span className="text-[11px] font-bold text-[#002F34] mt-2">Tue</span>
-              </div>
-
-              {/* Wednesday (Coral Pink Striped) */}
-              <div className="flex flex-col items-center h-full justify-end group">
-                <div className="w-full max-w-[34px] h-[50%] rounded-full pattern-stripes-pink border border-rose-300 relative transition-transform group-hover:scale-105">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-rose-400 absolute -top-1.5 left-1/2 -translate-x-1/2" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-500 mt-2">Wed</span>
-              </div>
-
-              {/* Thursday (Lavender Striped) */}
-              <div className="flex flex-col items-center h-full justify-end group">
-                <div className="w-full max-w-[34px] h-[70%] rounded-full pattern-stripes-lavender border border-indigo-300 relative transition-transform group-hover:scale-105">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-indigo-400 absolute -top-1.5 left-1/2 -translate-x-1/2" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-500 mt-2">Thu</span>
-              </div>
-
-              {/* Friday (Mint Striped) */}
-              <div className="flex flex-col items-center h-full justify-end group">
-                <div className="w-full max-w-[34px] h-[85%] rounded-full pattern-stripes-mint border border-teal-300 relative transition-transform group-hover:scale-105">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-teal-400 absolute -top-1.5 left-1/2 -translate-x-1/2" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-500 mt-2">Fri</span>
-              </div>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
 
       {/* Bottom Section: Customer Orders Table */}

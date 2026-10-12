@@ -6,6 +6,7 @@ import { SupplierReturn } from '../models/SupplierReturn.js';
 import { Batch } from '../models/Batch.js';
 import { Item } from '../models/Item.js';
 import { StockMovement } from '../models/StockMovement.js';
+import { AnalyticsCache } from '../models/AnalyticsCache.js';
 
 export interface DateRangeQuery {
   startDate?: string;
@@ -38,11 +39,18 @@ export function resolveDhakaDateRange(startDateStr?: string, endDateStr?: string
 
 export class ReportService {
   /**
-   * RPT-01: Executive Dashboard Live Metrics
+   * RPT-01: Executive Dashboard Metrics with Period-Aware Analytics Cache
+   * Supports: 'today' | 'last_7_days' | 'this_month'
+   * Features:
+   *  - Automatic persistent cache in AnalyticsCache with clean storage management (old cache pruned)
+   *  - Best-selling company / brand product breakdown
+   *  - Generic-wise sales bar metrics
+   *  - Saturday-to-Friday weekly sales line performance
    */
-  async getDashboardKPIs() {
+  async getDashboardKPIs(period: string = 'today', forceRefresh: boolean = false) {
     const now = new Date();
-    // Format YYYY-MM-DD in Asia/Dhaka
+
+    // Format YYYY-MM-DD in Asia/Dhaka (+06:00)
     const dhakaDateStr = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Dhaka',
       year: 'numeric',
@@ -50,118 +58,293 @@ export class ReportService {
       day: '2-digit',
     }).format(now);
 
+    const [yearStr, monthStr] = dhakaDateStr.split('-');
     const todayStart = new Date(`${dhakaDateStr}T00:00:00+06:00`);
     const todayEnd = new Date(`${dhakaDateStr}T23:59:59.999+06:00`);
 
-    // Yesterday
-    const yesterdayDate = new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-    const yestStr = new Intl.DateTimeFormat('en-CA', {
+    const normalizedPeriod = ['today', 'last_7_days', 'this_month'].includes(period)
+      ? period
+      : 'today';
+
+    const cacheKey = `dashboard_kpi_${normalizedPeriod}_${dhakaDateStr}`;
+
+    // 1. Check persistent cache if not forcing refresh
+    if (!forceRefresh) {
+      try {
+        const cached = await AnalyticsCache.findOne({ key: cacheKey });
+        if (cached && cached.expiresAt > now) {
+          return {
+            ...cached.data,
+            fromCache: true,
+            calculatedAt: cached.calculatedAt,
+          };
+        }
+      } catch (err) {
+        console.warn('AnalyticsCache query failed, continuing with direct computation:', err);
+      }
+    }
+
+    // 2. Resolve requested period date range
+    let periodStart: Date;
+    let periodEnd: Date = todayEnd;
+
+    if (normalizedPeriod === 'today') {
+      periodStart = todayStart;
+    } else if (normalizedPeriod === 'last_7_days') {
+      periodStart = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
+    } else {
+      // 'this_month': 1st of month to today
+      periodStart = new Date(`${yearStr}-${monthStr}-01T00:00:00+06:00`);
+    }
+
+    // Previous comparative window for growth % calculation
+    const periodDurationMs = Math.max(1000, periodEnd.getTime() - periodStart.getTime());
+    const prevPeriodStart = new Date(periodStart.getTime() - periodDurationMs);
+    const prevPeriodEnd = new Date(periodStart.getTime() - 1);
+
+    // 3. Resolve Saturday-to-Friday Weekly Performance Window in Asia/Dhaka
+    const dhakaWeekday = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Dhaka',
+      weekday: 'short',
+    }).format(now);
+
+    const weekdayOffsets: Record<string, number> = {
+      Sat: 0,
+      Sun: 1,
+      Mon: 2,
+      Tue: 3,
+      Wed: 4,
+      Thu: 5,
+      Fri: 6,
+    };
+    const daysSinceSat = weekdayOffsets[dhakaWeekday] ?? 0;
+    const weekStart = new Date(todayStart.getTime() - daysSinceSat * 24 * 60 * 60 * 1000);
+    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+    const weekStartDateStr = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Dhaka',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(yesterdayDate);
-    const yesterdayStart = new Date(`${yestStr}T00:00:00+06:00`);
-    const yesterdayEnd = new Date(`${yestStr}T23:59:59.999+06:00`);
+    }).format(weekStart);
 
-    // 7 Days ago
-    const sevenDaysAgoStart = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
-
+    // 4. Fetch DB records in parallel
     const [
-      todayInvoices,
-      yesterdayInvoices,
-      sevenDaysInvoices,
+      periodInvoices,
+      prevPeriodInvoices,
+      weeklyInvoices,
       allBatches,
-      allCreditNotesToday,
+      periodCreditNotes,
     ] = await Promise.all([
-      Invoice.find({ createdAt: { $gte: todayStart, $lte: todayEnd } }).lean(),
-      Invoice.find({ createdAt: { $gte: yesterdayStart, $lte: yesterdayEnd } }).lean(),
-      Invoice.find({ createdAt: { $gte: sevenDaysAgoStart, $lte: todayEnd } }).lean(),
+      Invoice.find({ createdAt: { $gte: periodStart, $lte: periodEnd } }).lean(),
+      Invoice.find({ createdAt: { $gte: prevPeriodStart, $lte: prevPeriodEnd } }).lean(),
+      Invoice.find({ createdAt: { $gte: weekStart, $lte: weekEnd } }).lean(),
       Batch.find().lean(),
-      CreditNote.find({ createdAt: { $gte: todayStart, $lte: todayEnd } }).lean(),
+      CreditNote.find({ createdAt: { $gte: periodStart, $lte: periodEnd } }).lean(),
     ]);
 
-    // Calculate Today Sales
-    let todaySalesDec = new Decimal(0);
-    let todayPaymentSplit = { cash: new Decimal(0), card: new Decimal(0), mfs: new Decimal(0) };
-    const itemSalesMap = new Map<string, { tradeName: string; genericName: string; pcs: number; revenue: any }>();
+    // 5. Build Item Metadata Map for Brand and Generic aggregation
+    const uniqueItemIds = new Set<string>();
+    for (const inv of periodInvoices) {
+      for (const line of inv.lines) {
+        if (line.itemId) uniqueItemIds.add(line.itemId.toString());
+      }
+    }
+    const itemsList = await Item.find({ _id: { $in: Array.from(uniqueItemIds) } })
+      .select('tradeName genericName brandName manufacturer')
+      .lean();
+    const itemMetaMap = new Map<string, any>();
+    for (const it of itemsList) {
+      itemMetaMap.set(it._id.toString(), it);
+    }
 
-    for (const inv of todayInvoices) {
+    // 6. Aggregate Financial Metrics for the Selected Period
+    let grossSalesDec = new Decimal(0);
+    let paymentSplit = { cash: new Decimal(0), card: new Decimal(0), mfs: new Decimal(0) };
+    const itemSalesMap = new Map<string, { tradeName: string; genericName: string; pcs: number; revenue: any }>();
+    const companySalesMap = new Map<string, { revenue: any; pieces: number }>();
+    const genericSalesMap = new Map<string, { revenue: any; pieces: number }>();
+    let totalProductRevenueDec = new Decimal(0);
+
+    for (const inv of periodInvoices) {
       const gTotal = new Decimal(inv.grandTotal?.toString() || 0);
-      todaySalesDec = todaySalesDec.plus(gTotal);
+      grossSalesDec = grossSalesDec.plus(gTotal);
 
       if (inv.payment?.method === 'cash') {
-        todayPaymentSplit.cash = todayPaymentSplit.cash.plus(gTotal);
+        paymentSplit.cash = paymentSplit.cash.plus(gTotal);
       } else if (inv.payment?.method === 'card') {
-        todayPaymentSplit.card = todayPaymentSplit.card.plus(gTotal);
+        paymentSplit.card = paymentSplit.card.plus(gTotal);
       } else if (inv.payment?.method === 'mfs') {
-        todayPaymentSplit.mfs = todayPaymentSplit.mfs.plus(gTotal);
+        paymentSplit.mfs = paymentSplit.mfs.plus(gTotal);
       } else if (inv.payment?.method === 'split' && inv.payment.splitDetails) {
         if (inv.payment.splitDetails.cashAmount) {
-          todayPaymentSplit.cash = todayPaymentSplit.cash.plus(new Decimal(inv.payment.splitDetails.cashAmount.toString()));
+          paymentSplit.cash = paymentSplit.cash.plus(new Decimal(inv.payment.splitDetails.cashAmount.toString()));
         }
         if (inv.payment.splitDetails.cardAmount) {
-          todayPaymentSplit.card = todayPaymentSplit.card.plus(new Decimal(inv.payment.splitDetails.cardAmount.toString()));
+          paymentSplit.card = paymentSplit.card.plus(new Decimal(inv.payment.splitDetails.cardAmount.toString()));
         }
         if (inv.payment.splitDetails.mfsAmount) {
-          todayPaymentSplit.mfs = todayPaymentSplit.mfs.plus(new Decimal(inv.payment.splitDetails.mfsAmount.toString()));
+          paymentSplit.mfs = paymentSplit.mfs.plus(new Decimal(inv.payment.splitDetails.mfsAmount.toString()));
         }
       }
 
       for (const line of inv.lines) {
+        const lineRev = new Decimal(line.lineTotal?.toString() || 0);
+        totalProductRevenueDec = totalProductRevenueDec.plus(lineRev);
+        const meta = itemMetaMap.get(line.itemId.toString());
+
+        // Top medicines tracking
         const key = line.itemId.toString();
-        const prev = itemSalesMap.get(key) || {
+        const prevItem = itemSalesMap.get(key) || {
           tradeName: line.tradeName,
           genericName: line.genericName,
           pcs: 0,
           revenue: new Decimal(0),
         };
-        prev.pcs += line.quantityPieces;
-        prev.revenue = prev.revenue.plus(new Decimal(line.lineTotal?.toString() || 0));
-        itemSalesMap.set(key, prev);
+        prevItem.pcs += line.quantityPieces || 0;
+        prevItem.revenue = prevItem.revenue.plus(lineRev);
+        itemSalesMap.set(key, prevItem);
+
+        // Company / Brand Sales Tracking
+        const companyName = (meta?.brandName || meta?.manufacturer || line.tradeName.split(' ')[0] || 'General Brand').trim();
+        const prevComp = companySalesMap.get(companyName) || { revenue: new Decimal(0), pieces: 0 };
+        prevComp.revenue = prevComp.revenue.plus(lineRev);
+        prevComp.pieces += line.quantityPieces || 0;
+        companySalesMap.set(companyName, prevComp);
+
+        // Generic-Wise Sales Tracking
+        const genericName = (line.genericName || meta?.genericName || 'General Formula').trim();
+        const prevGen = genericSalesMap.get(genericName) || { revenue: new Decimal(0), pieces: 0 };
+        prevGen.revenue = prevGen.revenue.plus(lineRev);
+        prevGen.pieces += line.quantityPieces || 0;
+        genericSalesMap.set(genericName, prevGen);
       }
     }
 
-    // Today Refunds
-    let todayRefundsDec = new Decimal(0);
-    for (const cn of allCreditNotesToday) {
-      todayRefundsDec = todayRefundsDec.plus(new Decimal(cn.grandTotalRefund?.toString() || 0));
+    // Period Refunds
+    let refundsDec = new Decimal(0);
+    for (const cn of periodCreditNotes) {
+      refundsDec = refundsDec.plus(new Decimal(cn.grandTotalRefund?.toString() || 0));
+    }
+    const netSalesDec = grossSalesDec.minus(refundsDec);
+
+    // Previous Period Sales for Growth %
+    let prevGrossSalesDec = new Decimal(0);
+    for (const inv of prevPeriodInvoices) {
+      prevGrossSalesDec = prevGrossSalesDec.plus(new Decimal(inv.grandTotal?.toString() || 0));
     }
 
-    // Yesterday Sales
-    let yesterdaySalesDec = new Decimal(0);
-    for (const inv of yesterdayInvoices) {
-      yesterdaySalesDec = yesterdaySalesDec.plus(new Decimal(inv.grandTotal?.toString() || 0));
+    let salesGrowthPercent = 0;
+    if (prevGrossSalesDec.greaterThan(0)) {
+      salesGrowthPercent = grossSalesDec
+        .minus(prevGrossSalesDec)
+        .dividedBy(prevGrossSalesDec)
+        .times(100)
+        .toDecimalPlaces(1)
+        .toNumber();
     }
 
-    // 7 Days Daily Trend
-    const dailyTrendMap = new Map<string, { date: string; sales: any; count: number }>();
+    // 7. Format Company / Brand Breakdown ("Which company product has best sales")
+    const sortedCompanies = Array.from(companySalesMap.entries())
+      .map(([company, val]) => ({
+        company,
+        revenue: val.revenue.toFixed(2),
+        pieces: val.pieces,
+        rawRevenue: val.revenue.toNumber(),
+        percentage: totalProductRevenueDec.greaterThan(0)
+          ? Math.round(val.revenue.dividedBy(totalProductRevenueDec).times(100).toNumber())
+          : 0,
+      }))
+      .sort((a, b) => b.rawRevenue - a.rawRevenue);
+
+    let companySales: any[] = [];
+    if (sortedCompanies.length <= 5) {
+      companySales = sortedCompanies;
+    } else {
+      const top5 = sortedCompanies.slice(0, 5);
+      const others = sortedCompanies.slice(5);
+      let otherRev = new Decimal(0);
+      let otherPieces = 0;
+      for (const o of others) {
+        otherRev = otherRev.plus(o.revenue);
+        otherPieces += o.pieces;
+      }
+      const otherPct = totalProductRevenueDec.greaterThan(0)
+        ? Math.round(otherRev.dividedBy(totalProductRevenueDec).times(100).toNumber())
+        : 0;
+      companySales = [
+        ...top5,
+        {
+          company: 'Other Brands',
+          revenue: otherRev.toFixed(2),
+          pieces: otherPieces,
+          rawRevenue: otherRev.toNumber(),
+          percentage: otherPct,
+        },
+      ];
+    }
+
+    // 8. Format Generic-Wise Sales Performance (for Bar Graph)
+    const sortedGenerics = Array.from(genericSalesMap.entries())
+      .map(([genericName, val]) => ({
+        genericName,
+        revenue: val.revenue.toFixed(2),
+        pieces: val.pieces,
+        rawRevenue: val.revenue.toNumber(),
+        percentage: totalProductRevenueDec.greaterThan(0)
+          ? Math.round(val.revenue.dividedBy(totalProductRevenueDec).times(100).toNumber())
+          : 0,
+      }))
+      .sort((a, b) => b.rawRevenue - a.rawRevenue)
+      .slice(0, 6);
+
+    // 9. Format Weekly Sales Performance (Saturday to Friday Cycle)
+    const dayNames = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const weeklySales: any[] = [];
+    let maxDaySales = new Decimal(0);
+    let peakDayIndex = -1;
+
     for (let i = 0; i < 7; i++) {
-      const d = new Date(sevenDaysAgoStart.getTime() + i * 24 * 60 * 60 * 1000);
-      const ds = new Intl.DateTimeFormat('en-CA', {
+      const dStart = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+      const dEnd = new Date(dStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+      const dStr = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Dhaka',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-      }).format(d);
-      dailyTrendMap.set(ds, { date: ds, sales: new Decimal(0), count: 0 });
-    }
+      }).format(dStart);
 
-    for (const inv of sevenDaysInvoices) {
-      const invDateStr = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Dhaka',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(new Date(inv.createdAt));
-      const entry = dailyTrendMap.get(invDateStr);
-      if (entry) {
-        entry.sales = entry.sales.plus(new Decimal(inv.grandTotal?.toString() || 0));
-        entry.count += 1;
+      let daySales = new Decimal(0);
+      let dayCount = 0;
+
+      for (const inv of weeklyInvoices) {
+        const invT = new Date(inv.createdAt).getTime();
+        if (invT >= dStart.getTime() && invT <= dEnd.getTime()) {
+          daySales = daySales.plus(new Decimal(inv.grandTotal?.toString() || 0));
+          dayCount++;
+        }
       }
+
+      if (daySales.greaterThan(maxDaySales)) {
+        maxDaySales = daySales;
+        peakDayIndex = i;
+      }
+
+      weeklySales.push({
+        day: dayNames[i],
+        date: dStr,
+        sales: daySales.toFixed(2),
+        salesNum: daySales.toNumber(),
+        count: dayCount,
+        isToday: dStr === dhakaDateStr,
+        isPeak: false,
+      });
     }
 
-    // Expiry Alerts
+    if (peakDayIndex >= 0 && maxDaySales.greaterThan(0)) {
+      weeklySales[peakDayIndex].isPeak = true;
+    }
+
+    // 10. Expiry Alerts
     let expiredBatches = 0;
     let critical30Batches = 0;
     let warning60Batches = 0;
@@ -176,7 +359,7 @@ export class ReportService {
       else if (diffDays <= 90) notice90Batches++;
     }
 
-    // Top 5 Best-Selling Medicines
+    // 11. Top 5 Best-Selling Medicines
     const topMedicines = Array.from(itemSalesMap.entries())
       .map(([itemId, val]) => ({
         itemId,
@@ -188,45 +371,28 @@ export class ReportService {
       .sort((a, b) => b.piecesSold - a.piecesSold)
       .slice(0, 5);
 
-    // Sales growth percentage compared to yesterday
-    let salesGrowthPercent = 0;
-    if (yesterdaySalesDec.greaterThan(0)) {
-      salesGrowthPercent = todaySalesDec
-        .minus(yesterdaySalesDec)
-        .dividedBy(yesterdaySalesDec)
-        .times(100)
-        .toDecimalPlaces(1)
-        .toNumber();
-    }
-
-    return {
+    const resultData = {
+      period: normalizedPeriod,
       today: {
         date: dhakaDateStr,
-        grossSales: todaySalesDec.toFixed(2),
-        refunds: todayRefundsDec.toFixed(2),
-        netSales: todaySalesDec.minus(todayRefundsDec).toFixed(2),
-        invoiceCount: todayInvoices.length,
+        grossSales: grossSalesDec.toFixed(2),
+        refunds: refundsDec.toFixed(2),
+        netSales: netSalesDec.toFixed(2),
+        invoiceCount: periodInvoices.length,
         averageTicketSize:
-          todayInvoices.length > 0
-            ? todaySalesDec.dividedBy(todayInvoices.length).toFixed(2)
+          periodInvoices.length > 0
+            ? grossSalesDec.dividedBy(periodInvoices.length).toFixed(2)
             : '0.00',
         salesGrowthPercent,
         paymentSplit: {
-          cash: todayPaymentSplit.cash.toFixed(2),
-          card: todayPaymentSplit.card.toFixed(2),
-          mfs: todayPaymentSplit.mfs.toFixed(2),
+          cash: paymentSplit.cash.toFixed(2),
+          card: paymentSplit.card.toFixed(2),
+          mfs: paymentSplit.mfs.toFixed(2),
         },
       },
-      yesterday: {
-        date: yestStr,
-        grossSales: yesterdaySalesDec.toFixed(2),
-        invoiceCount: yesterdayInvoices.length,
-      },
-      sevenDaysTrend: Array.from(dailyTrendMap.values()).map((t) => ({
-        date: t.date,
-        sales: t.sales.toFixed(2),
-        count: t.count,
-      })),
+      companySales,
+      genericSales: sortedGenerics,
+      weeklySales,
       alerts: {
         expired: expiredBatches,
         critical30: critical30Batches,
@@ -235,6 +401,50 @@ export class ReportService {
         totalAlerts: expiredBatches + critical30Batches + warning60Batches + notice90Batches,
       },
       topMedicines,
+    };
+
+    // 12. Persistent Cache Management & Deletion of Previous Caches
+    try {
+      // Delete any prior cache for this specific period key that is not today's
+      await AnalyticsCache.deleteMany({
+        key: { $regex: `^dashboard_kpi_${normalizedPeriod}_`, $ne: cacheKey },
+      });
+
+      // Purge any expired cache documents
+      await AnalyticsCache.deleteMany({
+        expiresAt: { $lt: now },
+      });
+
+      // Purge previous week's weekly cache when a new Saturday week begins
+      const weeklyKey = `dashboard_weekly_sales_${weekStartDateStr}`;
+      await AnalyticsCache.deleteMany({
+        key: { $regex: '^dashboard_weekly_sales_', $ne: weeklyKey },
+      });
+
+      // Set expiry: 5 minutes for 'today' so live POS sales reflect periodically,
+      // end of day for 'last_7_days' and 'this_month'
+      const cacheExpiry = normalizedPeriod === 'today'
+        ? new Date(now.getTime() + 5 * 60 * 1000)
+        : todayEnd;
+
+      await AnalyticsCache.findOneAndUpdate(
+        { key: cacheKey },
+        {
+          key: cacheKey,
+          data: resultData,
+          calculatedAt: now,
+          expiresAt: cacheExpiry,
+        },
+        { upsert: true, new: true }
+      );
+    } catch (cacheErr) {
+      console.warn('AnalyticsCache persistence failed:', cacheErr);
+    }
+
+    return {
+      ...resultData,
+      fromCache: false,
+      calculatedAt: now,
     };
   }
 

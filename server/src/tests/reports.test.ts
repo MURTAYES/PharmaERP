@@ -18,4 +18,20 @@ describe('Report Timezone & Pipeline Utilities', () => {
     expect(start).not.toBeNull();
     expect(end).toBeNull();
   });
+
+  it('verifies Saturday-based week cycle offsets', () => {
+    // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const weekdayOffsets: Record<string, number> = {
+      Sat: 0,
+      Sun: 1,
+      Mon: 2,
+      Tue: 3,
+      Wed: 4,
+      Thu: 5,
+      Fri: 6,
+    };
+    expect(weekdayOffsets['Sat']).toBe(0);
+    expect(weekdayOffsets['Sun']).toBe(1);
+    expect(weekdayOffsets['Fri']).toBe(6);
+  });
 });

@@ -18,8 +18,8 @@ export interface DateQueryFilter {
 }
 
 export const reportApi = {
-  getDashboardKPIs: async () => {
-    const res = await api.get('/dashboard-kpis');
+  getDashboardKPIs: async (period: string = 'today') => {
+    const res = await api.get('/dashboard-kpis', { params: { period } });
     return res.data;
   },
 

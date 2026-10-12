@@ -2,9 +2,11 @@ import { Request, Response } from 'express';
 import { reportService } from '../services/reportService.js';
 
 export class ReportController {
-  async getDashboardKPIs(_req: Request, res: Response): Promise<void> {
+  async getDashboardKPIs(req: Request, res: Response): Promise<void> {
     try {
-      const data = await reportService.getDashboardKPIs();
+      const period = (req.query.period as string) || 'today';
+      const refresh = req.query.refresh === 'true';
+      const data = await reportService.getDashboardKPIs(period, refresh);
       res.status(200).json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to generate dashboard KPIs' });
