@@ -240,9 +240,6 @@ export const ItemModal: React.FC<ItemModalProps> = ({
               <h2 className="text-xl font-bold text-[#002F34] tracking-tight leading-snug">
                 {itemToEdit ? 'Edit Master Product' : 'Add Master Product'}
               </h2>
-              <p className="text-xs text-[#5F7D7A] font-medium tracking-normal mt-0.5">
-                Product definition, brand, multi-barcodes & packaging ratio
-              </p>
             </div>
           </div>
 
@@ -279,13 +276,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
           {/* Section 1: Product Identification & Brand */}
           <div className="bg-[#F8FAF9] rounded-[24px] p-5 sm:p-6 border border-[#E8EFEA] shadow-xs space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-[#E7F6F3] text-[#004D40] text-xs font-bold flex items-center justify-center font-mono">
-                  01
-                </span>
-                <h3 className="text-sm font-bold text-[#002F34] tracking-tight">Product Identification & Brand</h3>
-              </div>
-              <span className="text-[11px] font-medium text-[#7A9894]">* Required for billing</span>
+              <h3 className="text-sm font-bold text-[#002F34] tracking-tight">Product Identification & Brand</h3>
             </div>
 
             {/* Top Level Product Category Selector */}
@@ -442,15 +433,10 @@ export const ItemModal: React.FC<ItemModalProps> = ({
             {/* Multi-Barcode and QR Code Row */}
             <div className="pt-2 border-t border-[#E8EFEA] space-y-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold text-[#002F34] flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px] text-primary">barcode_scanner</span>
-                    Barcodes & QR Codes <span className="text-[11px] font-normal text-[#7A9894]">(Both optional)</span>
-                  </h4>
-                  <p className="text-[11px] text-[#7A9894] mt-0.5">
-                    You can associate multiple barcodes (e.g. from different batches). Any scanned barcode will identify this product.
-                  </p>
-                </div>
+                <h4 className="text-xs font-bold text-[#002F34] flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-primary">barcode_scanner</span>
+                  Barcodes & QR Codes <span className="text-[11px] font-normal text-[#7A9894]">(Optional)</span>
+                </h4>
               </div>
 
               {/* Barcodes tag list */}
@@ -507,7 +493,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
                 {/* QR Code input */}
                 <div>
                   <label className="block text-xs font-bold text-[#002F34] mb-1.5">
-                    QR Code Payload / String (Optional)
+                    QR Code String (Optional)
                   </label>
                   <input
                     type="text"
@@ -522,38 +508,25 @@ export const ItemModal: React.FC<ItemModalProps> = ({
           </div>
 
           {/* Section 2: Unit Pricing & Box Packaging Ratio */}
-          <div className="bg-[#F8FAF9] rounded-[24px] p-5 sm:p-6 border border-[#E8EFEA] shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-[#E7F6F3] text-[#004D40] text-xs font-bold flex items-center justify-center font-mono">
-                  02
-                </span>
-                <div>
-                  <h3 className="text-sm font-bold text-[#002F34] tracking-tight">
-                    Pricing & Box Packaging Ratio
-                  </h3>
-                  <p className="text-[11px] text-[#7A9894]">All counter sales are in Piece (pc). Box contains N pieces.</p>
-                </div>
-              </div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#006059] bg-white px-3 py-1 rounded-full border border-[#D2E4DF] shadow-2xs self-start sm:self-auto">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Piece-Based Dispensary Engine
-              </div>
+          <div className="bg-[#F8FAF9] rounded-[24px] p-5 sm:p-6 border border-[#E8EFEA] shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-[#002F34] tracking-tight">
+                Pricing & Packaging Ratio
+              </h3>
             </div>
 
             {/* 2 Core Inputs: MRP Per Piece & Pieces Per Box */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* MRP Per Piece */}
-              <div className="bg-white p-4 rounded-2xl border border-[#DCE6E2] shadow-2xs hover:border-[#B7D2CB] transition-colors">
-                <div className="flex items-center justify-between mb-1">
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE6E2] shadow-2xs">
+                <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold text-[#002F34]" htmlFor="mrpPerPiece">
                     MRP Per Piece (৳) <span className="text-rose-500">*</span>
                   </label>
                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Counter Sale Unit
+                    Piece Unit
                   </span>
                 </div>
-                <p className="text-[11px] text-[#7A9894] mb-2.5">Price charged per single piece/tablet/pot</p>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center font-bold text-[#004D40] text-base">
                     ৳
@@ -573,16 +546,15 @@ export const ItemModal: React.FC<ItemModalProps> = ({
               </div>
 
               {/* Pieces Per Box */}
-              <div className="bg-white p-4 rounded-2xl border border-[#DCE6E2] shadow-2xs hover:border-[#B7D2CB] transition-colors">
-                <div className="flex items-center justify-between mb-1">
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE6E2] shadow-2xs">
+                <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold text-[#002F34]" htmlFor="piecesPerBox">
                     Pieces Per Box <span className="text-rose-500">*</span>
                   </label>
                   <span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
-                    Stock Receiving Pack
+                    Box Unit
                   </span>
                 </div>
-                <p className="text-[11px] text-[#7A9894] mb-2.5">Total pieces inside 1 commercial box</p>
                 <div className="relative">
                   <input
                     id="piecesPerBox"
@@ -603,45 +575,41 @@ export const ItemModal: React.FC<ItemModalProps> = ({
             </div>
 
             {/* Derived Pricing Preview */}
-            <div className="bg-[#F1F6F4] border border-[#D5E3DE] rounded-[22px] p-5 text-[#002F34]">
-              <div className="flex items-center justify-between pb-3 border-b border-[#D5E3DE]/70 mb-3.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold tracking-wider uppercase text-[#002F34]">
-                    Computed Pricing Preview
-                  </span>
-                </div>
-                <div className="text-xs font-mono font-bold text-[#006059]">
+            <div className="bg-[#F1F6F4] border border-[#D5E3DE] rounded-[22px] p-4 text-[#002F34]">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#D5E3DE]/70 mb-3">
+                <span className="text-xs font-bold tracking-wider uppercase text-[#002F34]">
+                  Computed Pricing Preview
+                </span>
+                <span className="text-xs font-mono font-bold text-[#006059]">
                   1 Box = {pcs} Pieces
-                </div>
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="bg-white border border-[#DEE8E5] rounded-xl p-4 shadow-sm">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#47635F] bg-[#F0F5F3] px-2 py-0.5 rounded-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-white border border-[#DEE8E5] rounded-xl p-3.5 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#47635F]">
                     Single Piece Rate
                   </span>
-                  <div className="mt-2 flex items-baseline gap-1">
+                  <div className="mt-1 flex items-baseline gap-1">
                     <span className="text-base font-bold text-[#007062]">৳</span>
                     <span className="text-2xl font-bold font-mono text-[#002F34]">
                       {parseFloat(mrpPerPiece || '0').toFixed(2)}
                     </span>
                     <span className="text-xs text-[#7A9894]">/ pc</span>
                   </div>
-                  <span className="text-[11px] text-[#607774] mt-1 block">Counter selling unit</span>
                 </div>
 
-                <div className="bg-white border border-[#97D8D0] rounded-xl p-4 shadow-sm">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#004D40] bg-[#E1F6F0] px-2 py-0.5 rounded-full">
+                <div className="bg-white border border-[#97D8D0] rounded-xl p-3.5 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#004D40]">
                     Full Box Rate ({pcs} pcs)
                   </span>
-                  <div className="mt-2 flex items-baseline gap-1">
+                  <div className="mt-1 flex items-baseline gap-1">
                     <span className="text-base font-bold text-[#007062]">৳</span>
                     <span className="text-2xl font-bold font-mono text-[#002F34]">
                       {boxPrice}
                     </span>
                     <span className="text-xs text-[#7A9894]">/ box</span>
                   </div>
-                  <span className="text-[11px] text-[#607774] mt-1 block">Receiving conversion rate</span>
                 </div>
               </div>
             </div>
@@ -649,12 +617,7 @@ export const ItemModal: React.FC<ItemModalProps> = ({
 
           {/* Section 3: Dispensary Logistics & Stock Thresholds */}
           <div className="bg-[#F8FAF9] rounded-[24px] p-5 sm:p-6 border border-[#E8EFEA] shadow-xs space-y-4">
-            <div className="flex items-center gap-2.5">
-              <span className="w-6 h-6 rounded-lg bg-[#E7F6F3] text-[#004D40] text-xs font-bold flex items-center justify-center font-mono">
-                03
-              </span>
-              <h3 className="text-sm font-bold text-[#002F34] tracking-tight">Dispensary Logistics & Thresholds</h3>
-            </div>
+            <h3 className="text-sm font-bold text-[#002F34] tracking-tight">Dispensary Logistics & Thresholds</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
