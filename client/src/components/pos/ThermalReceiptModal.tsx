@@ -1,33 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Invoice } from '../../types';
 import { useSettings } from '../../context/SettingsContext.tsx';
 import { formatMoney, parseMoney } from '../../utils/money';
+import { printReceiptElement } from '../../utils/printReceipt';
 
 interface ThermalReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   invoice: Invoice | null;
+  autoPrint?: boolean;
 }
 
 export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   isOpen,
   onClose,
   invoice,
+  autoPrint = false,
 }) => {
   const { settings } = useSettings();
   const [receiptWidth, setReceiptWidth] = useState<'80mm' | '58mm'>(
     settings?.receiptWidth || '80mm'
   );
 
+  const handlePrint = () => {
+    printReceiptElement('thermal-receipt', receiptWidth);
+  };
+
+  // Automatically trigger print if requested (e.g. from POS checkout)
+  useEffect(() => {
+    if (isOpen && autoPrint && invoice) {
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, autoPrint, invoice, receiptWidth]);
+
+  // Intercept Ctrl+P / Cmd+P while modal is open to print only the receipt
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        handlePrint();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, receiptWidth]);
+
   if (!isOpen || !invoice) return null;
 
   const invoiceDate = new Date(invoice.createdAt);
   const formattedDate = format(invoiceDate, 'dd/MM/yyyy hh:mm a');
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   return (
     <div

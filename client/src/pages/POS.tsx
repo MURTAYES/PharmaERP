@@ -44,6 +44,7 @@ export const POS: React.FC = () => {
   // Completed Invoice & Receipt State
   const [completedInvoice, setCompletedInvoice] = useState<Invoice | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
 
   // Network Status
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -481,11 +482,10 @@ export const POS: React.FC = () => {
       setDiscountPercent('0.00');
 
       if (autoPrint) {
+        setAutoPrintReceipt(true);
         setShowReceiptModal(true);
-        setTimeout(() => {
-          window.print();
-        }, 500);
       } else {
+        setAutoPrintReceipt(false);
         setSuccessMsg(`Sale completed: Invoice #${res.invoice.invoiceNumber}`);
         setTimeout(() => setSuccessMsg(null), 4000);
       }
@@ -814,8 +814,12 @@ export const POS: React.FC = () => {
       {showReceiptModal && (
         <ThermalReceiptModal
           isOpen={showReceiptModal}
-          onClose={() => setShowReceiptModal(false)}
+          onClose={() => {
+            setShowReceiptModal(false);
+            setAutoPrintReceipt(false);
+          }}
           invoice={completedInvoice}
+          autoPrint={autoPrintReceipt}
         />
       )}
     </div>

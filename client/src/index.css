@@ -89,3 +89,13 @@
 input:focus, select:focus, textarea:focus {
   outline: none;
 }
+
+/* Global Print Utilities */
+@media print {
+  .no-print,
+  nav,
+  aside,
+  header {
+    display: none !important;
+  }
+}

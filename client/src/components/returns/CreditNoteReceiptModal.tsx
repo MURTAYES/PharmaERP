@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { CreditNote } from '../../types';
+import { printReceiptElement } from '../../utils/printReceipt';
 
 interface CreditNoteReceiptModalProps {
   isOpen: boolean;
@@ -20,7 +21,7 @@ export const CreditNoteReceiptModal: React.FC<CreditNoteReceiptModalProps> = ({
   if (!creditNote) return null;
 
   const handlePrint = () => {
-    window.print();
+    printReceiptElement('credit-note-receipt', '80mm');
   };
 
   const formattedDate = format(new Date(creditNote.createdAt), 'dd/MM/yyyy hh:mm a');
@@ -47,6 +48,7 @@ export const CreditNoteReceiptModal: React.FC<CreditNoteReceiptModalProps> = ({
         {/* Thermal Receipt Paper Layout */}
         <div
           ref={printContainerRef}
+          id="credit-note-receipt"
           className="receipt-print-area bg-white text-slate-900 font-mono text-xs p-6 rounded-2xl border border-slate-200 shadow-sm mx-auto max-w-[80mm] leading-relaxed"
         >
           {/* Header */}
